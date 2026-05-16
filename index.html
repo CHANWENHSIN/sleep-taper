@@ -32,7 +32,7 @@ body { font-family: Arial; background: #f5f5f5; padding: 15px; }
   <option value="0">0</option>
 </select><br><br>
 
-<label>入睡時間：</label>
+<label>入睡時間（分鐘）：</label>
 <input type="number" id="latency"><br><br>
 
 <label>醒來次數：</label>
@@ -59,7 +59,7 @@ body { font-family: Arial; background: #f5f5f5; padding: 15px; }
 </div>
 
 <div class="card">
-<h3>🧭 判斷</h3>
+<h3>🧭 決策建議</h3>
 <div id="result" class="result"></div>
 </div>
 
@@ -71,6 +71,14 @@ body { font-family: Arial; background: #f5f5f5; padding: 15px; }
 <script>
 let logs = JSON.parse(localStorage.getItem("sleepLogs")) || [];
 
+// 劑量階梯
+function getNextDose(current) {
+  const steps = [0.5, 0.375, 0.25, 0.125, 0];
+  let index = steps.indexOf(current);
+  return steps[index + 1] ?? 0;
+}
+
+// 睡眠分數
 function getScore(l) {
   let score = 0;
   if (l.latency <= 20) score++;
@@ -79,11 +87,17 @@ function getScore(l) {
   return score;
 }
 
+// 儲存
 function saveLog() {
-  let date = document.getElementById("date").value;
+  let date = dateInput.value;
+
+  if (!date) {
+    alert("請選日期");
+    return;
+  }
 
   if (logs.some(l => l.date === date)) {
-    alert("當天已存在");
+    alert("這一天已經有紀錄");
     return;
   }
 
@@ -104,33 +118,67 @@ function saveLog() {
   analyze();
 }
 
+// ⭐ 決策引擎
 function evaluate() {
-  if (logs.length < 2) return;
+  if (logs.length < 3) {
+    result.innerHTML = "📊 資料不足（至少3筆）";
+    result.className = "result warn";
+    return;
+  }
 
   let last2 = logs.slice(-2);
+  let currentDose = logs[logs.length - 1].dose;
+  let nextDose = getNextDose(currentDose);
 
-  let ok = last2.every(l =>
-    l.latency <= 20 && l.wake <= 1 && l.energy >= 3
+  let stable = last2.every(l =>
+    l.latency <= 20 &&
+    l.wake <= 1 &&
+    l.energy >= 3
   );
 
-  result.innerHTML = ok ? "🟢 可降藥" : "🟡 維持";
+  let unstable = last2.some(l =>
+    l.energy <= 2 ||
+    l.latency > 40 ||
+    l.wake >= 2
+  );
+
+  let hasBadHabit = last2.some(l =>
+    l.coffee === "晚上"
+  );
+
+  if (unstable) {
+    result.innerHTML = "🔴 不穩定，先不要降";
+    result.className = "result bad";
+  } else if (stable && !hasBadHabit) {
+    result.innerHTML =
+      `🟢 可以降藥<br>建議：${currentDose} → ${nextDose}`;
+    result.className = "result good";
+  } else {
+    result.innerHTML = "🟡 維持目前劑量";
+    result.className = "result warn";
+  }
 }
 
+// 📊 分析
 function analyze() {
   if (logs.length < 3) return;
+
+  let avg = arr =>
+    arr.reduce((a,b)=>a+getScore(b),0)/arr.length || 0;
 
   let withSup = logs.filter(l => l.supplement);
   let withoutSup = logs.filter(l => !l.supplement);
 
-  let avg = arr => arr.reduce((a,b)=>a+getScore(b),0)/arr.length || 0;
-
   let supEffect = avg(withSup) - avg(withoutSup);
 
   let coffeeMap = {早上:[], 下午:[], 晚上:[]};
-  logs.forEach(l => { if (l.coffee) coffeeMap[l.coffee].push(l); });
+
+  logs.forEach(l => {
+    if (l.coffee) coffeeMap[l.coffee].push(l);
+  });
 
   let coffeeResult = Object.entries(coffeeMap)
-    .map(([k,v]) => `${k}:${avg(v).toFixed(2)}`)
+    .map(([k,v]) => `${k}: ${avg(v).toFixed(2)}`)
     .join("<br>");
 
   analysis.innerHTML = `
