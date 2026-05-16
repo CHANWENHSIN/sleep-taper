@@ -38,17 +38,18 @@ button {
 .good { color: green; }
 .warn { color: orange; }
 .bad { color: red; }
-
-small { color: #666; }
 </style>
 </head>
 
 <body>
 
 <h2>💊 戒安眠藥紀錄</h2>
-<small id="dateLabel"></small>
 
 <div class="card">
+
+<label>記錄日期：</label>
+<input type="date" id="date"><br><br>
+
 <label>劑量：</label>
 <select id="dose">
   <option value="0.5">0.5</option>
@@ -72,8 +73,16 @@ small { color: #666; }
 <input type="number" id="energy" min="1" max="5" value="3"><br><br>
 
 <label>
-<input type="checkbox" id="supplement"> 昨晚有吃樟芝活力
+<input type="checkbox" id="supplement"> 有吃彰蜆活力
 </label><br><br>
+
+<label>咖啡：</label>
+<select id="coffee">
+  <option value="">無</option>
+  <option value="早上">早上</option>
+  <option value="下午">下午</option>
+  <option value="晚上">晚上</option>
+</select><br><br>
 
 <button onclick="saveLog()">儲存</button>
 </div>
@@ -91,16 +100,14 @@ small { color: #666; }
 <script>
 let logs = JSON.parse(localStorage.getItem("sleepLogs")) || [];
 
-// 👉 取得昨天日期
-function getYesterday() {
+// 預設日期 = 昨天
+function setDefaultDate() {
   let d = new Date();
   d.setDate(d.getDate() - 1);
-  return d.toLocaleDateString();
+  document.getElementById("date").value = d.toISOString().split("T")[0];
 }
 
-// 顯示日期
-document.getElementById("dateLabel").innerText =
-  "記錄日期（昨晚）： " + getYesterday();
+setDefaultDate();
 
 // 劑量階梯
 function getNextDose(current) {
@@ -111,30 +118,40 @@ function getNextDose(current) {
 
 // 儲存
 function saveLog() {
+  let date = document.getElementById("date").value;
   let dose = parseFloat(document.getElementById("dose").value);
   let latency = parseInt(document.getElementById("latency").value);
   let wake = parseInt(document.getElementById("wake").value);
   let energy = parseInt(document.getElementById("energy").value);
   let supplement = document.getElementById("supplement").checked;
+  let coffee = document.getElementById("coffee").value;
 
-  if (!latency || !energy) {
+  if (!date || !latency || !energy) {
     alert("請填寫完整資料");
     return;
   }
 
+  // 防呆：同一天只能一筆
+  let exists = logs.some(l => l.date === date);
+  if (exists) {
+    alert("這一天已經有紀錄了！");
+    return;
+  }
+
   let log = {
-    date: getYesterday(),
+    date,
     dose,
     latency,
     wake,
     energy,
-    supplement
+    supplement,
+    coffee
   };
 
   logs.push(log);
   localStorage.setItem("sleepLogs", JSON.stringify(logs));
 
-  alert("已儲存昨天的紀錄 👍");
+  alert("已儲存 👍");
 
   evaluate();
   renderHistory();
@@ -175,7 +192,7 @@ function evaluate() {
   }
 }
 
-// 歷史紀錄
+// 歷史
 function renderHistory() {
   let ul = document.getElementById("history");
   ul.innerHTML = "";
@@ -184,7 +201,8 @@ function renderHistory() {
     let li = document.createElement("li");
     li.innerText =
       `${l.date}｜劑量:${l.dose}｜入睡:${l.latency}分｜醒:${l.wake}次｜精神:${l.energy}` +
-      (l.supplement ? "｜有吃樟芝" : "");
+      (l.supplement ? "｜有吃彰蜆" : "") +
+      (l.coffee ? `｜咖啡:${l.coffee}` : "");
     ul.appendChild(li);
   });
 }
