@@ -117,20 +117,29 @@ li {
 <script>
 let logs = JSON.parse(localStorage.getItem("sleepLogs")) || [];
 
+// ✅ 正確設定「昨天」日期（避免時區錯誤）
 function setDefaultDate() {
   let d = new Date();
   d.setDate(d.getDate() - 1);
-  document.getElementById("date").value = d.toISOString().split("T")[0];
+
+  let yyyy = d.getFullYear();
+  let mm = String(d.getMonth() + 1).padStart(2, '0');
+  let dd = String(d.getDate()).padStart(2, '0');
+
+  let input = document.getElementById("date");
+  if (!input.value) {
+    input.value = `${yyyy}-${mm}-${dd}`;
+  }
 }
 
-setDefaultDate();
-
+// 劑量階梯
 function getNextDose(current) {
   const steps = [0.5, 0.375, 0.25, 0.125, 0];
   let index = steps.indexOf(current);
   return steps[index + 1] ?? 0;
 }
 
+// 睡眠分數
 function getScore(l) {
   let score = 0;
   if (l.latency <= 20) score++;
@@ -139,6 +148,7 @@ function getScore(l) {
   return score;
 }
 
+// 儲存
 function saveLog() {
   let date = document.getElementById("date").value;
   let dose = parseFloat(document.getElementById("dose").value);
@@ -153,28 +163,15 @@ function saveLog() {
     return;
   }
 
-  if (energy < 1 || energy > 5) {
-    alert("起床精神請填 1～5");
-    return;
-  }
-
   if (logs.some(l => l.date === date)) {
-    alert("這一天已經有紀錄，為避免重複，同一天只能一筆。");
+    alert("這一天已經有紀錄");
     return;
   }
 
-  let log = {
-    date,
-    dose,
-    latency,
-    wake,
-    energy,
-    supplement,
-    coffee
-  };
+  let log = { date, dose, latency, wake, energy, supplement, coffee };
 
   logs.push(log);
-  logs.sort((a, b) => new Date(a.date) - new Date(b.date));
+  logs.sort((a,b)=> new Date(a.date) - new Date(b.date));
 
   localStorage.setItem("sleepLogs", JSON.stringify(logs));
 
@@ -185,131 +182,102 @@ function saveLog() {
   renderHistory();
 }
 
+// 決策
 function evaluate() {
   let result = document.getElementById("result");
 
   if (logs.length < 7) {
-    result.innerHTML = `
-      🟡 先累積資料<br>
-      目前只有 ${logs.length} 筆，建議至少記錄 7 天後再判斷是否降藥
-    `;
+    result.innerHTML = `🟡 先累積資料（目前 ${logs.length} 天）`;
     result.className = "result warn";
     return;
   }
 
   let currentDose = logs[logs.length - 1].dose;
   let sameDoseLogs = logs.filter(l => l.dose === currentDose);
-  let recentSameDoseLogs = sameDoseLogs.slice(-5);
+  let recent = sameDoseLogs.slice(-5);
 
-  if (recentSameDoseLogs.length < 5) {
-    result.innerHTML = `
-      🟡 維持目前劑量<br>
-      同一劑量至少觀察 5 天，目前只有 ${recentSameDoseLogs.length} 天
-    `;
+  if (recent.length < 5) {
+    result.innerHTML = `🟡 同劑量觀察不足（${recent.length}/5天）`;
     result.className = "result warn";
     return;
   }
 
-  let stable = recentSameDoseLogs.every(l =>
+  let stable = recent.every(l =>
     l.latency <= 20 &&
     l.wake <= 1 &&
     l.energy >= 3
   );
 
-  let unstable = recentSameDoseLogs.some(l =>
-    l.energy <= 2 ||
-    l.latency > 40 ||
-    l.wake >= 2
+  let unstable = recent.some(l =>
+    l.energy <= 2 || l.latency > 40 || l.wake >= 2
   );
 
-  let hasNightCoffee = recentSameDoseLogs.some(l =>
-    l.coffee === "晚上"
+  let badHabit = recent.some(l =>
+    l.coffee === "晚上" || l.supplement
   );
 
-  let hasSupplement = recentSameDoseLogs.some(l =>
-    l.supplement
-  );
-
-  let nextDose = getNextDose(currentDose);
+  let next = getNextDose(currentDose);
 
   if (unstable) {
-    result.innerHTML = `
-      🔴 不穩定，先不要降<br>
-      建議維持目前劑量，先把睡眠穩住
-    `;
+    result.innerHTML = "🔴 不穩定，先不要降";
     result.className = "result bad";
-  } else if (stable && !hasNightCoffee && !hasSupplement) {
-    result.innerHTML = `
-      🟢 可以考慮降藥<br>
-      建議：${currentDose} → ${nextDose}<br>
-      但請保守調整，不要硬停
-    `;
+  } else if (stable && !badHabit) {
+    result.innerHTML = `🟢 可以降藥：${currentDose} → ${next}`;
     result.className = "result good";
   } else {
-    result.innerHTML = `
-      🟡 建議維持目前劑量<br>
-      最近紀錄有干擾因子：${hasNightCoffee ? "晚上咖啡 " : ""}${hasSupplement ? "彰蜆活力" : ""}
-    `;
+    result.innerHTML = "🟡 建議維持（有干擾因素）";
     result.className = "result warn";
   }
 }
 
+// 分析
 function analyze() {
-  let analysis = document.getElementById("analysis");
+  if (logs.length < 3) return;
 
-  if (logs.length < 3) {
-    analysis.innerHTML = `目前資料太少，至少 3 筆後才會開始分析。`;
-    return;
-  }
-
-  let avg = arr =>
-    arr.length ? arr.reduce((a,b) => a + getScore(b), 0) / arr.length : 0;
+  let avg = arr => arr.reduce((a,b)=>a+getScore(b),0)/arr.length || 0;
 
   let withSup = logs.filter(l => l.supplement);
   let withoutSup = logs.filter(l => !l.supplement);
 
-  let supText = "資料不足";
-  if (withSup.length > 0 && withoutSup.length > 0) {
-    let diff = avg(withSup) - avg(withoutSup);
-    supText = diff.toFixed(2);
-  }
+  let supEffect = (withSup.length && withoutSup.length)
+    ? (avg(withSup) - avg(withoutSup)).toFixed(2)
+    : "資料不足";
 
-  let coffeeTypes = ["早上", "下午", "晚上"];
-  let coffeeResult = coffeeTypes.map(type => {
-    let data = logs.filter(l => l.coffee === type);
-    return `${type}：${data.length ? avg(data).toFixed(2) + " / 3" : "資料不足"}`;
+  let coffeeTypes = ["早上","下午","晚上"];
+  let coffeeResult = coffeeTypes.map(t=>{
+    let arr = logs.filter(l=>l.coffee===t);
+    return `${t}：${arr.length?avg(arr).toFixed(2):"資料不足"}`;
   }).join("<br>");
 
-  analysis.innerHTML = `
-    📌 平均睡眠分數：${avg(logs).toFixed(2)} / 3<br><br>
-    📌 彰蜆活力影響：${supText}<br>
-    <small>正數代表有吃時分數較高，負數代表有吃時分數較低。</small><br><br>
-    📌 咖啡影響：<br>${coffeeResult}
+  document.getElementById("analysis").innerHTML = `
+  平均分數：${avg(logs).toFixed(2)} / 3<br><br>
+  彰蜆活力影響：${supEffect}<br><br>
+  咖啡影響：<br>${coffeeResult}
   `;
 }
 
+// 歷史
 function renderHistory() {
-  let history = document.getElementById("history");
-  history.innerHTML = "";
+  let ul = document.getElementById("history");
+  ul.innerHTML = "";
 
-  if (logs.length === 0) {
-    history.innerHTML = "<li>尚無紀錄</li>";
-    return;
-  }
-
-  logs.slice().reverse().forEach(l => {
+  logs.slice().reverse().forEach(l=>{
     let li = document.createElement("li");
     li.innerText =
-      `${l.date}｜劑量:${l.dose}｜入睡:${l.latency}分｜醒:${l.wake}次｜精神:${l.energy}` +
-      (l.supplement ? "｜有吃彰蜆活力" : "") +
-      (l.coffee ? `｜咖啡:${l.coffee}` : "｜咖啡:無");
-    history.appendChild(li);
+      `${l.date}｜劑量:${l.dose}｜入睡:${l.latency}｜醒:${l.wake}｜精神:${l.energy}` +
+      (l.supplement?"｜彰蜆":"") +
+      (l.coffee?`｜咖啡:${l.coffee}`:"");
+    ul.appendChild(li);
   });
 }
 
-evaluate();
-analyze();
-renderHistory();
+// 初始化
+window.onload = function() {
+  setDefaultDate();
+  evaluate();
+  analyze();
+  renderHistory();
+};
 </script>
 
 </body>
