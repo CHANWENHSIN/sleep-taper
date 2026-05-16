@@ -35,6 +35,13 @@ button {
   color: white;
   font-size: 16px;
 }
+.delete-btn {
+  width: auto;
+  padding: 4px 8px;
+  margin-left: 8px;
+  background: #e53935;
+  font-size: 12px;
+}
 .result {
   font-size: 18px;
   font-weight: bold;
@@ -49,6 +56,7 @@ ul {
 }
 li {
   margin-bottom: 8px;
+  line-height: 1.5;
 }
 </style>
 </head>
@@ -117,7 +125,6 @@ li {
 <script>
 let logs = JSON.parse(localStorage.getItem("sleepLogs")) || [];
 
-// ✅ 正確設定「昨天」日期（避免時區錯誤）
 function setDefaultDate() {
   let d = new Date();
   d.setDate(d.getDate() - 1);
@@ -132,14 +139,12 @@ function setDefaultDate() {
   }
 }
 
-// 劑量階梯
 function getNextDose(current) {
   const steps = [0.5, 0.375, 0.25, 0.125, 0];
   let index = steps.indexOf(current);
   return steps[index + 1] ?? 0;
 }
 
-// 睡眠分數
 function getScore(l) {
   let score = 0;
   if (l.latency <= 20) score++;
@@ -148,7 +153,6 @@ function getScore(l) {
   return score;
 }
 
-// 儲存
 function saveLog() {
   let date = document.getElementById("date").value;
   let dose = parseFloat(document.getElementById("dose").value);
@@ -182,7 +186,17 @@ function saveLog() {
   renderHistory();
 }
 
-// 決策
+function deleteLog(index) {
+  if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+
+  logs.splice(index, 1);
+  localStorage.setItem("sleepLogs", JSON.stringify(logs));
+
+  evaluate();
+  analyze();
+  renderHistory();
+}
+
 function evaluate() {
   let result = document.getElementById("result");
 
@@ -230,9 +244,13 @@ function evaluate() {
   }
 }
 
-// 分析
 function analyze() {
-  if (logs.length < 3) return;
+  let analysis = document.getElementById("analysis");
+
+  if (logs.length < 3) {
+    analysis.innerHTML = "目前資料太少，至少 3 筆後才會開始分析。";
+    return;
+  }
 
   let avg = arr => arr.reduce((a,b)=>a+getScore(b),0)/arr.length || 0;
 
@@ -249,29 +267,36 @@ function analyze() {
     return `${t}：${arr.length?avg(arr).toFixed(2):"資料不足"}`;
   }).join("<br>");
 
-  document.getElementById("analysis").innerHTML = `
-  平均分數：${avg(logs).toFixed(2)} / 3<br><br>
-  彰蜆活力影響：${supEffect}<br><br>
-  咖啡影響：<br>${coffeeResult}
+  analysis.innerHTML = `
+    平均分數：${avg(logs).toFixed(2)} / 3<br><br>
+    彰蜆活力影響：${supEffect}<br><br>
+    咖啡影響：<br>${coffeeResult}
   `;
 }
 
-// 歷史
 function renderHistory() {
   let ul = document.getElementById("history");
   ul.innerHTML = "";
 
-  logs.slice().reverse().forEach(l=>{
+  if (logs.length === 0) {
+    ul.innerHTML = "<li>尚無紀錄</li>";
+    return;
+  }
+
+  logs.slice().reverse().forEach((l) => {
+    let originalIndex = logs.findIndex(item => item.date === l.date);
+
     let li = document.createElement("li");
-    li.innerText =
+    li.innerHTML =
       `${l.date}｜劑量:${l.dose}｜入睡:${l.latency}｜醒:${l.wake}｜精神:${l.energy}` +
-      (l.supplement?"｜彰蜆":"") +
-      (l.coffee?`｜咖啡:${l.coffee}`:"");
+      (l.supplement ? "｜彰蜆" : "") +
+      (l.coffee ? `｜咖啡:${l.coffee}` : "") +
+      ` <button class="delete-btn" onclick="deleteLog(${originalIndex})">刪除</button>`;
+
     ul.appendChild(li);
   });
 }
 
-// 初始化
 window.onload = function() {
   setDefaultDate();
   evaluate();
