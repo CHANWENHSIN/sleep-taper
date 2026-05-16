@@ -46,7 +46,7 @@ small { color: #666; }
 <body>
 
 <h2>💊 戒安眠藥紀錄</h2>
-<small id="today"></small>
+<small id="dateLabel"></small>
 
 <div class="card">
 <label>劑量：</label>
@@ -72,7 +72,7 @@ small { color: #666; }
 <input type="number" id="energy" min="1" max="5" value="3"><br><br>
 
 <label>
-<input type="checkbox" id="supplement"> 今天有吃樟芝活力
+<input type="checkbox" id="supplement"> 昨晚有吃樟芝活力
 </label><br><br>
 
 <button onclick="saveLog()">儲存</button>
@@ -91,15 +91,25 @@ small { color: #666; }
 <script>
 let logs = JSON.parse(localStorage.getItem("sleepLogs")) || [];
 
-document.getElementById("today").innerText =
-  "今天：" + new Date().toLocaleDateString();
+// 👉 取得昨天日期
+function getYesterday() {
+  let d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString();
+}
 
+// 顯示日期
+document.getElementById("dateLabel").innerText =
+  "記錄日期（昨晚）： " + getYesterday();
+
+// 劑量階梯
 function getNextDose(current) {
   const steps = [0.5, 0.375, 0.25, 0.125, 0];
   let index = steps.indexOf(current);
   return steps[index + 1] ?? 0;
 }
 
+// 儲存
 function saveLog() {
   let dose = parseFloat(document.getElementById("dose").value);
   let latency = parseInt(document.getElementById("latency").value);
@@ -107,8 +117,13 @@ function saveLog() {
   let energy = parseInt(document.getElementById("energy").value);
   let supplement = document.getElementById("supplement").checked;
 
+  if (!latency || !energy) {
+    alert("請填寫完整資料");
+    return;
+  }
+
   let log = {
-    date: new Date().toLocaleDateString(),
+    date: getYesterday(),
     dose,
     latency,
     wake,
@@ -119,11 +134,13 @@ function saveLog() {
   logs.push(log);
   localStorage.setItem("sleepLogs", JSON.stringify(logs));
 
-  alert("已儲存！");
+  alert("已儲存昨天的紀錄 👍");
+
   evaluate();
   renderHistory();
 }
 
+// 判斷
 function evaluate() {
   if (logs.length < 2) return;
 
@@ -158,6 +175,7 @@ function evaluate() {
   }
 }
 
+// 歷史紀錄
 function renderHistory() {
   let ul = document.getElementById("history");
   ul.innerHTML = "";
