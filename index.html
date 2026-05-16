@@ -6,12 +6,50 @@
 <title>睡眠決策中心</title>
 
 <style>
-body { font-family: Arial; background: #f5f5f5; padding: 15px; }
-.card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-.result { font-size: 20px; font-weight: bold; text-align: center; }
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  padding: 15px;
+}
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+label {
+  font-weight: bold;
+}
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+button {
+  padding: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #4CAF50;
+  color: white;
+  font-size: 16px;
+}
+.result {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.6;
+}
 .good { color: green; }
 .warn { color: orange; }
 .bad { color: red; }
+ul {
+  padding-left: 18px;
+}
+li {
+  margin-bottom: 8px;
+}
 </style>
 </head>
 
@@ -20,65 +58,79 @@ body { font-family: Arial; background: #f5f5f5; padding: 15px; }
 <h2>💊 睡眠決策中心</h2>
 
 <div class="card">
-<label>日期：</label>
-<input type="date" id="date"><br><br>
+  <label>記錄日期：</label>
+  <input type="date" id="date"><br><br>
 
-<label>劑量：</label>
-<select id="dose">
-  <option value="0.5">0.5</option>
-  <option value="0.375">0.375</option>
-  <option value="0.25">0.25</option>
-  <option value="0.125">0.125</option>
-  <option value="0">0</option>
-</select><br><br>
+  <label>劑量：</label>
+  <select id="dose">
+    <option value="0.5">0.5</option>
+    <option value="0.375">0.375</option>
+    <option value="0.25">0.25</option>
+    <option value="0.125">0.125</option>
+    <option value="0">0</option>
+  </select><br><br>
 
-<label>入睡時間（分鐘）：</label>
-<input type="number" id="latency"><br><br>
+  <label>入睡時間（分鐘）：</label>
+  <input type="number" id="latency" min="0"><br><br>
 
-<label>醒來次數：</label>
-<select id="wake">
-  <option value="0">0</option>
-  <option value="1">1</option>
-  <option value="2">2+</option>
-</select><br><br>
+  <label>半夜醒來：</label>
+  <select id="wake">
+    <option value="0">0次</option>
+    <option value="1">1次</option>
+    <option value="2">2次以上</option>
+  </select><br><br>
 
-<label>精神（1~5）：</label>
-<input type="number" id="energy"><br><br>
+  <label>起床精神（1~5）：</label>
+  <input type="number" id="energy" min="1" max="5" value="3"><br><br>
 
-<label><input type="checkbox" id="supplement"> 有吃彰蜆活力</label><br><br>
+  <label>
+    <input type="checkbox" id="supplement" style="width:auto;">
+    有吃彰蜆活力
+  </label><br><br>
 
-<label>咖啡：</label>
-<select id="coffee">
-  <option value="">無</option>
-  <option value="早上">早上</option>
-  <option value="下午">下午</option>
-  <option value="晚上">晚上</option>
-</select><br><br>
+  <label>咖啡：</label>
+  <select id="coffee">
+    <option value="">無</option>
+    <option value="早上">早上</option>
+    <option value="下午">下午</option>
+    <option value="晚上">晚上</option>
+  </select><br><br>
 
-<button onclick="saveLog()">儲存</button>
+  <button onclick="saveLog()">儲存</button>
 </div>
 
 <div class="card">
-<h3>🧭 決策建議</h3>
-<div id="result" class="result"></div>
+  <h3>🧭 決策建議</h3>
+  <div id="result" class="result"></div>
 </div>
 
 <div class="card">
-<h3>📊 分析結果</h3>
-<div id="analysis"></div>
+  <h3>📊 分析結果</h3>
+  <div id="analysis"></div>
+</div>
+
+<div class="card">
+  <h3>📋 歷史紀錄</h3>
+  <ul id="history"></ul>
 </div>
 
 <script>
 let logs = JSON.parse(localStorage.getItem("sleepLogs")) || [];
 
-// 劑量階梯
+function setDefaultDate() {
+  let d = new Date();
+  d.setDate(d.getDate() - 1);
+  document.getElementById("date").value = d.toISOString().split("T")[0];
+}
+
+setDefaultDate();
+
 function getNextDose(current) {
   const steps = [0.5, 0.375, 0.25, 0.125, 0];
   let index = steps.indexOf(current);
   return steps[index + 1] ?? 0;
 }
 
-// 睡眠分數
 function getScore(l) {
   let score = 0;
   if (l.latency <= 20) score++;
@@ -87,109 +139,177 @@ function getScore(l) {
   return score;
 }
 
-// 儲存
 function saveLog() {
-  let date = dateInput.value;
+  let date = document.getElementById("date").value;
+  let dose = parseFloat(document.getElementById("dose").value);
+  let latency = parseInt(document.getElementById("latency").value);
+  let wake = parseInt(document.getElementById("wake").value);
+  let energy = parseInt(document.getElementById("energy").value);
+  let supplement = document.getElementById("supplement").checked;
+  let coffee = document.getElementById("coffee").value;
 
-  if (!date) {
-    alert("請選日期");
+  if (!date || isNaN(latency) || isNaN(energy)) {
+    alert("請填寫完整資料");
+    return;
+  }
+
+  if (energy < 1 || energy > 5) {
+    alert("起床精神請填 1～5");
     return;
   }
 
   if (logs.some(l => l.date === date)) {
-    alert("這一天已經有紀錄");
+    alert("這一天已經有紀錄，為避免重複，同一天只能一筆。");
     return;
   }
 
   let log = {
     date,
-    dose: parseFloat(dose.value),
-    latency: parseInt(latency.value),
-    wake: parseInt(wake.value),
-    energy: parseInt(energy.value),
-    supplement: supplement.checked,
-    coffee: coffee.value
+    dose,
+    latency,
+    wake,
+    energy,
+    supplement,
+    coffee
   };
 
   logs.push(log);
+  logs.sort((a, b) => new Date(a.date) - new Date(b.date));
+
   localStorage.setItem("sleepLogs", JSON.stringify(logs));
+
+  alert("已儲存 👍");
 
   evaluate();
   analyze();
+  renderHistory();
 }
 
-// ⭐ 決策引擎
 function evaluate() {
-  if (logs.length < 3) {
-    result.innerHTML = "📊 資料不足（至少3筆）";
+  let result = document.getElementById("result");
+
+  if (logs.length < 7) {
+    result.innerHTML = `
+      🟡 先累積資料<br>
+      目前只有 ${logs.length} 筆，建議至少記錄 7 天後再判斷是否降藥
+    `;
     result.className = "result warn";
     return;
   }
 
-  let last2 = logs.slice(-2);
   let currentDose = logs[logs.length - 1].dose;
-  let nextDose = getNextDose(currentDose);
+  let sameDoseLogs = logs.filter(l => l.dose === currentDose);
+  let recentSameDoseLogs = sameDoseLogs.slice(-5);
 
-  let stable = last2.every(l =>
+  if (recentSameDoseLogs.length < 5) {
+    result.innerHTML = `
+      🟡 維持目前劑量<br>
+      同一劑量至少觀察 5 天，目前只有 ${recentSameDoseLogs.length} 天
+    `;
+    result.className = "result warn";
+    return;
+  }
+
+  let stable = recentSameDoseLogs.every(l =>
     l.latency <= 20 &&
     l.wake <= 1 &&
     l.energy >= 3
   );
 
-  let unstable = last2.some(l =>
+  let unstable = recentSameDoseLogs.some(l =>
     l.energy <= 2 ||
     l.latency > 40 ||
     l.wake >= 2
   );
 
-  let hasBadHabit = last2.some(l =>
+  let hasNightCoffee = recentSameDoseLogs.some(l =>
     l.coffee === "晚上"
   );
 
+  let hasSupplement = recentSameDoseLogs.some(l =>
+    l.supplement
+  );
+
+  let nextDose = getNextDose(currentDose);
+
   if (unstable) {
-    result.innerHTML = "🔴 不穩定，先不要降";
+    result.innerHTML = `
+      🔴 不穩定，先不要降<br>
+      建議維持目前劑量，先把睡眠穩住
+    `;
     result.className = "result bad";
-  } else if (stable && !hasBadHabit) {
-    result.innerHTML =
-      `🟢 可以降藥<br>建議：${currentDose} → ${nextDose}`;
+  } else if (stable && !hasNightCoffee && !hasSupplement) {
+    result.innerHTML = `
+      🟢 可以考慮降藥<br>
+      建議：${currentDose} → ${nextDose}<br>
+      但請保守調整，不要硬停
+    `;
     result.className = "result good";
   } else {
-    result.innerHTML = "🟡 維持目前劑量";
+    result.innerHTML = `
+      🟡 建議維持目前劑量<br>
+      最近紀錄有干擾因子：${hasNightCoffee ? "晚上咖啡 " : ""}${hasSupplement ? "彰蜆活力" : ""}
+    `;
     result.className = "result warn";
   }
 }
 
-// 📊 分析
 function analyze() {
-  if (logs.length < 3) return;
+  let analysis = document.getElementById("analysis");
+
+  if (logs.length < 3) {
+    analysis.innerHTML = `目前資料太少，至少 3 筆後才會開始分析。`;
+    return;
+  }
 
   let avg = arr =>
-    arr.reduce((a,b)=>a+getScore(b),0)/arr.length || 0;
+    arr.length ? arr.reduce((a,b) => a + getScore(b), 0) / arr.length : 0;
 
   let withSup = logs.filter(l => l.supplement);
   let withoutSup = logs.filter(l => !l.supplement);
 
-  let supEffect = avg(withSup) - avg(withoutSup);
+  let supText = "資料不足";
+  if (withSup.length > 0 && withoutSup.length > 0) {
+    let diff = avg(withSup) - avg(withoutSup);
+    supText = diff.toFixed(2);
+  }
 
-  let coffeeMap = {早上:[], 下午:[], 晚上:[]};
-
-  logs.forEach(l => {
-    if (l.coffee) coffeeMap[l.coffee].push(l);
-  });
-
-  let coffeeResult = Object.entries(coffeeMap)
-    .map(([k,v]) => `${k}: ${avg(v).toFixed(2)}`)
-    .join("<br>");
+  let coffeeTypes = ["早上", "下午", "晚上"];
+  let coffeeResult = coffeeTypes.map(type => {
+    let data = logs.filter(l => l.coffee === type);
+    return `${type}：${data.length ? avg(data).toFixed(2) + " / 3" : "資料不足"}`;
+  }).join("<br>");
 
   analysis.innerHTML = `
-  📌 平均睡眠分數：${avg(logs).toFixed(2)} / 3 <br><br>
-  📌 彰蜆活力影響：${supEffect.toFixed(2)} <br><br>
-  📌 咖啡影響：<br>${coffeeResult}
+    📌 平均睡眠分數：${avg(logs).toFixed(2)} / 3<br><br>
+    📌 彰蜆活力影響：${supText}<br>
+    <small>正數代表有吃時分數較高，負數代表有吃時分數較低。</small><br><br>
+    📌 咖啡影響：<br>${coffeeResult}
   `;
+}
+
+function renderHistory() {
+  let history = document.getElementById("history");
+  history.innerHTML = "";
+
+  if (logs.length === 0) {
+    history.innerHTML = "<li>尚無紀錄</li>";
+    return;
+  }
+
+  logs.slice().reverse().forEach(l => {
+    let li = document.createElement("li");
+    li.innerText =
+      `${l.date}｜劑量:${l.dose}｜入睡:${l.latency}分｜醒:${l.wake}次｜精神:${l.energy}` +
+      (l.supplement ? "｜有吃彰蜆活力" : "") +
+      (l.coffee ? `｜咖啡:${l.coffee}` : "｜咖啡:無");
+    history.appendChild(li);
+  });
 }
 
 evaluate();
 analyze();
+renderHistory();
 </script>
 
 </body>
