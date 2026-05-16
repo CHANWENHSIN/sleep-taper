@@ -3,38 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>戒安眠藥紀錄</title>
+<title>睡眠決策中心</title>
 
 <style>
-body {
-  font-family: Arial;
-  background: #f5f5f5;
-  padding: 15px;
-}
-.card {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 15px;
-}
-h2 { margin-top: 0; }
-
-button {
-  padding: 12px;
-  width: 100%;
-  border: none;
-  border-radius: 8px;
-  background: #4CAF50;
-  color: white;
-  font-size: 16px;
-}
-
-.result {
-  font-size: 20px;
-  font-weight: bold;
-  text-align: center;
-}
-
+body { font-family: Arial; background: #f5f5f5; padding: 15px; }
+.card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+.result { font-size: 20px; font-weight: bold; text-align: center; }
 .good { color: green; }
 .warn { color: orange; }
 .bad { color: red; }
@@ -43,11 +17,10 @@ button {
 
 <body>
 
-<h2>💊 戒安眠藥紀錄</h2>
+<h2>💊 睡眠決策中心</h2>
 
 <div class="card">
-
-<label>記錄日期：</label>
+<label>日期：</label>
 <input type="date" id="date"><br><br>
 
 <label>劑量：</label>
@@ -59,22 +32,20 @@ button {
   <option value="0">0</option>
 </select><br><br>
 
-<label>入睡時間（分鐘）：</label>
+<label>入睡時間：</label>
 <input type="number" id="latency"><br><br>
 
-<label>半夜醒來：</label>
+<label>醒來次數：</label>
 <select id="wake">
-  <option value="0">0次</option>
-  <option value="1">1次</option>
-  <option value="2">2次以上</option>
+  <option value="0">0</option>
+  <option value="1">1</option>
+  <option value="2">2+</option>
 </select><br><br>
 
-<label>起床精神（1~5）：</label>
-<input type="number" id="energy" min="1" max="5" value="3"><br><br>
+<label>精神（1~5）：</label>
+<input type="number" id="energy"><br><br>
 
-<label>
-<input type="checkbox" id="supplement"> 有吃彰蜆活力
-</label><br><br>
+<label><input type="checkbox" id="supplement"> 有吃彰蜆活力</label><br><br>
 
 <label>咖啡：</label>
 <select id="coffee">
@@ -88,127 +59,89 @@ button {
 </div>
 
 <div class="card">
-<h3>🧭 系統判斷</h3>
+<h3>🧭 判斷</h3>
 <div id="result" class="result"></div>
 </div>
 
 <div class="card">
-<h3>📊 歷史紀錄</h3>
-<ul id="history"></ul>
+<h3>📊 分析結果</h3>
+<div id="analysis"></div>
 </div>
 
 <script>
 let logs = JSON.parse(localStorage.getItem("sleepLogs")) || [];
 
-// 預設日期 = 昨天
-function setDefaultDate() {
-  let d = new Date();
-  d.setDate(d.getDate() - 1);
-  document.getElementById("date").value = d.toISOString().split("T")[0];
+function getScore(l) {
+  let score = 0;
+  if (l.latency <= 20) score++;
+  if (l.wake <= 1) score++;
+  if (l.energy >= 3) score++;
+  return score;
 }
 
-setDefaultDate();
-
-// 劑量階梯
-function getNextDose(current) {
-  const steps = [0.5, 0.375, 0.25, 0.125, 0];
-  let index = steps.indexOf(current);
-  return steps[index + 1] ?? 0;
-}
-
-// 儲存
 function saveLog() {
   let date = document.getElementById("date").value;
-  let dose = parseFloat(document.getElementById("dose").value);
-  let latency = parseInt(document.getElementById("latency").value);
-  let wake = parseInt(document.getElementById("wake").value);
-  let energy = parseInt(document.getElementById("energy").value);
-  let supplement = document.getElementById("supplement").checked;
-  let coffee = document.getElementById("coffee").value;
 
-  if (!date || !latency || !energy) {
-    alert("請填寫完整資料");
-    return;
-  }
-
-  // 防呆：同一天只能一筆
-  let exists = logs.some(l => l.date === date);
-  if (exists) {
-    alert("這一天已經有紀錄了！");
+  if (logs.some(l => l.date === date)) {
+    alert("當天已存在");
     return;
   }
 
   let log = {
     date,
-    dose,
-    latency,
-    wake,
-    energy,
-    supplement,
-    coffee
+    dose: parseFloat(dose.value),
+    latency: parseInt(latency.value),
+    wake: parseInt(wake.value),
+    energy: parseInt(energy.value),
+    supplement: supplement.checked,
+    coffee: coffee.value
   };
 
   logs.push(log);
   localStorage.setItem("sleepLogs", JSON.stringify(logs));
 
-  alert("已儲存 👍");
-
   evaluate();
-  renderHistory();
+  analyze();
 }
 
-// 判斷
 function evaluate() {
   if (logs.length < 2) return;
 
   let last2 = logs.slice(-2);
-  let currentDose = logs[logs.length - 1].dose;
-  let nextDose = getNextDose(currentDose);
 
-  let canReduce = last2.every(l =>
-    l.latency <= 20 &&
-    l.wake <= 1 &&
-    l.energy >= 3
+  let ok = last2.every(l =>
+    l.latency <= 20 && l.wake <= 1 && l.energy >= 3
   );
 
-  let unstable = last2.some(l =>
-    l.energy <= 2 || l.latency > 40
-  );
-
-  let resultDiv = document.getElementById("result");
-
-  if (canReduce) {
-    resultDiv.innerHTML =
-      `🟢 可以降藥<br>建議：${currentDose} → ${nextDose}`;
-    resultDiv.className = "result good";
-  } else if (unstable) {
-    resultDiv.innerHTML =
-      "🔴 不穩定，先不要降";
-    resultDiv.className = "result bad";
-  } else {
-    resultDiv.innerHTML =
-      "🟡 建議維持目前劑量";
-    resultDiv.className = "result warn";
-  }
+  result.innerHTML = ok ? "🟢 可降藥" : "🟡 維持";
 }
 
-// 歷史
-function renderHistory() {
-  let ul = document.getElementById("history");
-  ul.innerHTML = "";
+function analyze() {
+  if (logs.length < 3) return;
 
-  logs.slice().reverse().forEach(l => {
-    let li = document.createElement("li");
-    li.innerText =
-      `${l.date}｜劑量:${l.dose}｜入睡:${l.latency}分｜醒:${l.wake}次｜精神:${l.energy}` +
-      (l.supplement ? "｜有吃彰蜆" : "") +
-      (l.coffee ? `｜咖啡:${l.coffee}` : "");
-    ul.appendChild(li);
-  });
+  let withSup = logs.filter(l => l.supplement);
+  let withoutSup = logs.filter(l => !l.supplement);
+
+  let avg = arr => arr.reduce((a,b)=>a+getScore(b),0)/arr.length || 0;
+
+  let supEffect = avg(withSup) - avg(withoutSup);
+
+  let coffeeMap = {早上:[], 下午:[], 晚上:[]};
+  logs.forEach(l => { if (l.coffee) coffeeMap[l.coffee].push(l); });
+
+  let coffeeResult = Object.entries(coffeeMap)
+    .map(([k,v]) => `${k}:${avg(v).toFixed(2)}`)
+    .join("<br>");
+
+  analysis.innerHTML = `
+  📌 平均睡眠分數：${avg(logs).toFixed(2)} / 3 <br><br>
+  📌 彰蜆活力影響：${supEffect.toFixed(2)} <br><br>
+  📌 咖啡影響：<br>${coffeeResult}
+  `;
 }
 
-renderHistory();
 evaluate();
+analyze();
 </script>
 
 </body>
