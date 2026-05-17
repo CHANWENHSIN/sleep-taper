@@ -126,6 +126,7 @@ li {
 const STORAGE_KEY = "sleepLogs";
 let logs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
+// 資料標準化（不清資料）
 logs = logs.map(l => ({
   date: l.date,
   dose: Number(l.dose),
@@ -147,96 +148,97 @@ function setDefaultDate() {
   let mm = String(d.getMonth() + 1).padStart(2, '0');
   let dd = String(d.getDate()).padStart(2, '0');
 
-  let input = document.getElementById("date");
-  if (!input.value) input.value = `${yyyy}-${mm}-${dd}`;
+  document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
 }
 
+// ✅ 核心：醒來 = 0 才算穩定
 function isStable(l) {
   return l.latency <= 30 && l.wake === 0 && l.energy >= 3;
 }
 
-function dayDiff(a, b) {
+function dayDiff(a,b){
   return (new Date(b) - new Date(a)) / (1000*60*60*24);
 }
 
-function getContinuousSameDose() {
-  let result = [];
-  let last = logs[logs.length-1];
-  if (!last) return result;
+function getContinuousSameDose(){
+  let result=[];
+  let last=logs[logs.length-1];
+  if(!last) return result;
 
   result.unshift(last);
 
-  for (let i = logs.length-2; i >= 0; i--) {
-    let prev = logs[i];
-    let curr = result[0];
+  for(let i=logs.length-2;i>=0;i--){
+    let prev=logs[i];
+    let curr=result[0];
 
-    if (prev.dose !== last.dose) break;
-    if (dayDiff(prev.date, curr.date) !== 1) break;
+    if(prev.dose!==last.dose) break;
+    if(dayDiff(prev.date,curr.date)!==1) break;
 
     result.unshift(prev);
   }
   return result;
 }
 
-function evaluate() {
-  let result = document.getElementById("result");
+function evaluate(){
+  let resultDiv=document.getElementById("result");
 
-  if (logs.length < 5) {
-    result.innerHTML = `🟡 先累積資料（目前 ${logs.length} 天）`;
-    result.className = "result warn";
+  if(logs.length<5){
+    resultDiv.innerHTML=`🟡 先累積資料（${logs.length}天）`;
+    resultDiv.className="result warn";
     return;
   }
 
-  let records = getContinuousSameDose();
+  let records=getContinuousSameDose();
 
-  if (records.length < 5) {
-    result.innerHTML = `🟡 同劑量觀察不足（${records.length}/5天）`;
-    result.className = "result warn";
+  if(records.length<5){
+    resultDiv.innerHTML=`🟡 同劑量不足（${records.length}/5）`;
+    resultDiv.className="result warn";
     return;
   }
 
-  let last7 = records.slice(-7);
+  let last7=records.slice(-7);
 
-  let stableDays = last7.filter(isStable).length;
-  let maxStreak = 0, cur = 0;
+  let stableDays=last7.filter(isStable).length;
+  let maxStreak=0,cur=0;
 
   last7.forEach(l=>{
-    if(isStable(l)){ cur++; maxStreak=Math.max(maxStreak,cur); }
+    if(isStable(l)){cur++;maxStreak=Math.max(maxStreak,cur);}
     else cur=0;
   });
 
-  let hasNightCoffee = last7.some(l=>l.coffee==="晚上");
-  let hasSupplement = last7.some(l=>l.supplement);
+  let hasNightCoffee=last7.some(l=>l.coffee==="晚上");
+  let hasSupplement=last7.some(l=>l.supplement);
 
-  if (hasNightCoffee || hasSupplement) {
-    result.innerHTML = `🟡 有干擾因素（晚上咖啡/彰蜆），建議維持`;
-    result.className = "result warn";
+  if(hasNightCoffee||hasSupplement){
+    resultDiv.innerHTML=`🟡 有干擾（晚上咖啡/彰蜆）`;
+    resultDiv.className="result warn";
     return;
   }
 
-  if (stableDays < last7.length - 1) {
-    result.innerHTML = `🔴 穩定度不足（${stableDays}/${last7.length}天穩定）`;
-    result.className = "result bad";
+  if(stableDays < last7.length-1){
+    resultDiv.innerHTML=`🔴 穩定不足（${stableDays}/${last7.length}）`;
+    resultDiv.className="result bad";
     return;
   }
 
-  if (maxStreak < 3) {
-    result.innerHTML = `🟡 尚未連續穩定3天`;
-    result.className = "result warn";
+  if(maxStreak<3){
+    resultDiv.innerHTML=`🟡 未連續穩定3天`;
+    resultDiv.className="result warn";
     return;
   }
 
-  let nextMap = {0.5:0.375,0.375:0.25,0.25:0.125,0.125:0};
-  let next = nextMap[records[records.length-1].dose];
+  let nextMap={0.5:0.375,0.375:0.25,0.25:0.125,0.125:0};
+  let next=nextMap[records[records.length-1].dose];
 
-  result.innerHTML = `🟢 可以降藥 → ${records[records.length-1].dose} → ${next}`;
-  result.className = "result good";
+  resultDiv.innerHTML=`🟢 可以降藥 → ${records[records.length-1].dose} → ${next}`;
+  resultDiv.className="result good";
 }
 
-function saveLog() {
-  let date = dateInput.value;
-  if (logs.some(l=>l.date===date)){
-    alert("當天已存在"); return;
+function saveLog(){
+  let date=document.getElementById("date").value;
+
+  if(logs.some(l=>l.date===date)){
+    alert("當天已存在");return;
   }
 
   logs.push({
@@ -252,12 +254,12 @@ function saveLog() {
   logs.sort((a,b)=>new Date(a.date)-new Date(b.date));
   localStorage.setItem(STORAGE_KEY,JSON.stringify(logs));
 
-  evaluate();
   renderHistory();
+  evaluate();
 }
 
 function deleteLog(i){
-  if(!confirm("刪除?")) return;
+  if(!confirm("刪除?"))return;
   logs.splice(i,1);
   localStorage.setItem(STORAGE_KEY,JSON.stringify(logs));
   renderHistory();
@@ -265,16 +267,25 @@ function deleteLog(i){
 }
 
 function renderHistory(){
-  history.innerHTML="";
+  const historyList=document.getElementById("history");
+  historyList.innerHTML="";
+
+  if(logs.length===0){
+    historyList.innerHTML="<li>尚無紀錄</li>";
+    return;
+  }
+
   logs.slice().reverse().forEach(l=>{
-    let idx = logs.findIndex(x=>x.date===l.date);
+    let idx=logs.findIndex(x=>x.date===l.date);
     let li=document.createElement("li");
+
     li.innerHTML=
     `${l.date}｜${l.dose}｜入睡${l.latency}｜醒${l.wake}｜精神${l.energy}`
     +(l.supplement?"｜彰蜆":"")
     +(l.coffee?`｜咖啡:${l.coffee}`:"")
     +` <button class="delete-btn" onclick="deleteLog(${idx})">刪</button>`;
-    history.appendChild(li);
+
+    historyList.appendChild(li);
   });
 }
 
