@@ -290,5 +290,4 @@ const STORAGE_KEY = "sleepLogs";
 
 ```
 
-這版 README 已經對齊你目前這版 HTML 的邏輯：**UI 不動、資料不動，只更新決策建議邏輯的說明**。
-```
+
