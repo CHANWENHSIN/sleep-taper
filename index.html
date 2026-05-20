@@ -159,8 +159,112 @@ function setDefaultDate() {
   document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
 }
 
+/*
+  睡眠穩定判斷：
+  這裡判斷的是「目前劑量下睡眠是否穩定」，
+  不是代表自然睡眠能力已完全恢復。
+*/
 function isStable(l) {
-  return l.latency <= 30 && l.wake === 0 && l.energy >= 3;
+  return l.latency <= 30 && l.wake <= 1 && l.energy >= 3;
+}
+
+/*
+  睡眠品質分級：
+  A級：很好
+  B級：穩定
+  C級：普通
+  D級：不穩
+*/
+function getSleepQualityLevel(l) {
+  if (l.latency <= 15 && l.wake <= 1 && l.energy >= 4) {
+    return "A";
+  }
+
+  if (l.latency <= 30 && l.wake <= 1 && l.energy >= 3) {
+    return "B";
+  }
+
+  if (l.latency <= 45 && l.wake <= 2 && l.energy >= 2) {
+    return "C";
+  }
+
+  return "D";
+}
+
+function getSleepQualityScore(l) {
+  const level = getSleepQualityLevel(l);
+
+  if (level === "A") return 3;
+  if (level === "B") return 2;
+  if (level === "C") return 1;
+  return 0;
+}
+
+/*
+  明顯不穩定條件：
+  因目前欄位只有「2次以上」，無法區分 2 次或 3 次，
+  所以只要選到 2次以上，就先視為需要保守處理。
+*/
+function isPoorSleep(l) {
+  return l.latency > 45 || l.wake >= 2 || l.energy <= 1;
+}
+
+/*
+  干擾因子不再直接阻擋，只作為扣分。
+  早上咖啡不扣分。
+  下午咖啡、晚上咖啡、彰蜆、生理期前/中，作為風險修正。
+  扣分最多 -2，避免人生正常波動導致永遠不能進入評估。
+*/
+function getInterferencePenalty(records) {
+  let penalty = 0;
+
+  if (records.some(l => l.coffee === "下午")) {
+    penalty += 1;
+  }
+
+  if (records.some(l => l.coffee === "晚上")) {
+    penalty += 2;
+  }
+
+  if (records.some(l => l.supplement)) {
+    penalty += 1;
+  }
+
+  if (records.some(l => l.cycleStatus === "before_period")) {
+    penalty += 1;
+  }
+
+  if (records.some(l => l.cycleStatus === "during_period")) {
+    penalty += 1;
+  }
+
+  return Math.min(penalty, 2);
+}
+
+function getInterferenceText(records) {
+  let items = [];
+
+  if (records.some(l => l.coffee === "下午")) {
+    items.push("下午咖啡");
+  }
+
+  if (records.some(l => l.coffee === "晚上")) {
+    items.push("晚上咖啡");
+  }
+
+  if (records.some(l => l.supplement)) {
+    items.push("彰蜆活力");
+  }
+
+  if (records.some(l => l.cycleStatus === "before_period")) {
+    items.push("生理期前");
+  }
+
+  if (records.some(l => l.cycleStatus === "during_period")) {
+    items.push("生理期中");
+  }
+
+  return items;
 }
 
 function dayDiff(a,b){
@@ -203,50 +307,125 @@ function evaluate(){
     return;
   }
 
-  let last7=records.slice(-7);
+  let recent=records.slice(-7);
+  let latest=recent[recent.length-1];
 
-  let stableDays=last7.filter(isStable).length;
+  let stableDays=recent.filter(isStable).length;
+  let poorDays=recent.filter(isPoorSleep).length;
+
   let maxStreak=0,cur=0;
 
-  last7.forEach(l=>{
-    if(isStable(l)){cur++;maxStreak=Math.max(maxStreak,cur);}
-    else cur=0;
+  recent.forEach(l=>{
+    if(isStable(l)){
+      cur++;
+      maxStreak=Math.max(maxStreak,cur);
+    } else {
+      cur=0;
+    }
   });
 
-  let hasNightCoffee=last7.some(l=>l.coffee==="晚上");
-  let hasSupplement=last7.some(l=>l.supplement);
-  let hasBeforePeriod=last7.some(l=>l.cycleStatus==="before_period");
-  let hasDuringPeriod=last7.some(l=>l.cycleStatus==="during_period");
+  let lastTwo=recent.slice(-2);
+  let lastTwoPoor=lastTwo.length === 2 && lastTwo.every(isPoorSleep);
 
-  if(hasNightCoffee||hasSupplement||hasDuringPeriod){
-    resultDiv.innerHTML=`🟡 有干擾因素（晚上咖啡/彰蜆/生理期中），建議維持`;
-    resultDiv.className="result warn";
-    return;
-  }
-
-  if(stableDays < last7.length-1){
-    resultDiv.innerHTML=`🔴 穩定不足（${stableDays}/${last7.length}）`;
+  /*
+    強制保守條件：
+    這些代表近期睡眠品質明顯不穩，
+    不適合進入下一階段評估。
+  */
+  if(isPoorSleep(latest)){
+    resultDiv.innerHTML=
+      `🔴 近期睡眠不穩，暫不建議調整劑量<br>`+
+      `目前建議：維持目前劑量並觀察`;
     resultDiv.className="result bad";
     return;
   }
 
-  if(maxStreak<3){
-    resultDiv.innerHTML=`🟡 未連續穩定3天`;
+  if(lastTwoPoor){
+    resultDiv.innerHTML=
+      `🔴 連續兩天睡眠品質變差，暫不建議調整劑量<br>`+
+      `目前建議：維持目前劑量並觀察`;
+    resultDiv.className="result bad";
+    return;
+  }
+
+  if(stableDays < Math.ceil(recent.length * 0.7)){
+    resultDiv.innerHTML=
+      `🔴 穩定不足（${stableDays}/${recent.length}）<br>`+
+      `目前建議：維持目前劑量並觀察`;
+    resultDiv.className="result bad";
+    return;
+  }
+
+  if(stableDays < recent.length - 1){
+    resultDiv.innerHTML=
+      `🟡 睡眠尚可，但穩定天數不足（${stableDays}/${recent.length}）<br>`+
+      `目前建議：維持目前劑量再觀察`;
     resultDiv.className="result warn";
     return;
   }
+
+  if(maxStreak < 3){
+    resultDiv.innerHTML=
+      `🟡 尚未連續穩定 3 天<br>`+
+      `目前建議：維持目前劑量再觀察`;
+    resultDiv.className="result warn";
+    return;
+  }
+
+  let latestScore=getSleepQualityScore(latest);
+  let interferencePenalty=getInterferencePenalty(recent);
+  let interferenceItems=getInterferenceText(recent);
+
+  let stabilityBonus=1;
+
+  if(recent.length >= 7 && poorDays === 0 && stableDays >= recent.length - 1){
+    stabilityBonus=2;
+  }
+
+  let decisionScore=latestScore + stabilityBonus - interferencePenalty;
 
   let nextMap={0.5:0.375,0.375:0.25,0.25:0.125,0.125:0};
-  let next=nextMap[records[records.length-1].dose];
+  let currentDose=records[records.length-1].dose;
+  let next=nextMap[currentDose];
 
-  if(hasBeforePeriod){
-    resultDiv.innerHTML=`🟡 睡眠達標，但最近有生理期前狀態，建議保守觀察後再降`;
+  let interferenceNote="";
+
+  if(interferenceItems.length>0){
+    interferenceNote=`<br>備註：近期有 ${interferenceItems.join("、")}，已列入保守評估`;
+  }
+
+  if(next === undefined){
+    resultDiv.innerHTML=
+      `🟢 目前已是最低紀錄劑量<br>`+
+      `睡眠狀態穩定，請依醫師建議持續追蹤`+
+      interferenceNote;
+    resultDiv.className="result good";
+    return;
+  }
+
+  if(decisionScore >= 4){
+    resultDiv.innerHTML=
+      `🟢 目前劑量下睡眠穩定<br>`+
+      `可與醫師討論是否進入下一階段：${currentDose} → ${next}`+
+      interferenceNote;
+    resultDiv.className="result good";
+    return;
+  }
+
+  if(decisionScore >= 2){
+    resultDiv.innerHTML=
+      `🟡 睡眠大致穩定，但仍建議保守觀察<br>`+
+      `目前建議：維持 ${currentDose}，再觀察 3～7 天`+
+      interferenceNote;
     resultDiv.className="result warn";
     return;
   }
 
-  resultDiv.innerHTML=`🟢 可以降藥 → ${records[records.length-1].dose} → ${next}`;
-  resultDiv.className="result good";
+  resultDiv.innerHTML=
+    `🔴 近期條件不足，暫不建議調整劑量<br>`+
+    `目前建議：維持目前劑量並觀察`+
+    interferenceNote;
+  resultDiv.className="result bad";
 }
 
 function saveLog(){
