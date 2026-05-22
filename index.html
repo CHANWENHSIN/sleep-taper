@@ -58,6 +58,63 @@ li {
   margin-bottom: 8px;
   line-height: 1.5;
 }
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.summary-box {
+  background: #f8f8f8;
+  border-radius: 10px;
+  padding: 12px;
+  line-height: 1.5;
+}
+.summary-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.summary-main {
+  font-size: 22px;
+  font-weight: bold;
+}
+.summary-sub {
+  color: #555;
+  font-size: 14px;
+}
+.compact-line {
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+details {
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+summary {
+  cursor: pointer;
+  font-weight: bold;
+  color: #444;
+}
+.detail-content {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  margin-left: 4px;
+  background: #eee;
+}
+.tag-good { background: #e8f5e9; color: #2e7d32; }
+.tag-warn { background: #fff8e1; color: #f57f17; }
+.tag-bad { background: #ffebee; color: #c62828; }
+
 </style>
 </head>
 
@@ -648,6 +705,60 @@ function renderHistory(){
   });
 }
 
+function getTrendTag(stats){
+  if(!stats) return {text:"資料不足", cls:"tag-warn"};
+  if(stats.avgQuality >= 85 && stats.poorCount === 0 && stats.stableCount >= Math.ceil(stats.count * 0.8)){
+    return {text:"穩定", cls:"tag-good"};
+  }
+  if(stats.poorCount > 0 || stats.avgQuality < 70){
+    return {text:"需觀察", cls:"tag-bad"};
+  }
+  return {text:"普通", cls:"tag-warn"};
+}
+
+function getLatestJudgement(latest, recent7){
+  let interference=getRecordInterference(latest);
+  let quality=getQualityScore100(latest, recent7);
+
+  if(interference.isHigh){
+    return {
+      title:"🟡 高干擾日",
+      cls:"warn",
+      quality,
+      sampleText:"不列入降藥支持樣本",
+      note: interference.items.length ? interference.items.join("、") : "高干擾因素"
+    };
+  }
+
+  if(isPoorSleep(latest)){
+    return {
+      title:"🔴 睡眠不穩",
+      cls:"bad",
+      quality,
+      sampleText:"不建議調整",
+      note:"先觀察睡眠是否恢復穩定"
+    };
+  }
+
+  if(isStable(latest)){
+    return {
+      title:"🟢 睡眠穩定",
+      cls:"good",
+      quality,
+      sampleText:"有效穩定樣本",
+      note:"可納入劑量穩定度判斷"
+    };
+  }
+
+  return {
+    title:"🟡 尚可但未穩",
+    cls:"warn",
+    quality,
+    sampleText:"繼續觀察",
+    note:"不是高干擾日，但條件還不夠穩"
+  };
+}
+
 function analyze(){
   let analysis=document.getElementById("analysis");
 
@@ -663,11 +774,48 @@ function analyze(){
     {key:"after_period", label:"生理期後"}
   ];
 
+  let recent7=getRecentRecords(7);
+  let recent14=getRecentRecords(14);
+  let s7=getGroupStats(recent7);
+  let s14=getGroupStats(recent14);
+  let latest=logs[logs.length-1];
+  let latestInfo=getLatestJudgement(latest, recent7);
+  let trendTag=getTrendTag(s7);
+
+  let validTotal=logs.filter(isValidTaperSample).length;
+  let highTotal=logs.filter(l=>getRecordInterference(l).isHigh).length;
+
   let html="";
 
-  html += `<strong>分類品質</strong><br>`;
-  html += `總紀錄：${logs.length} 筆｜有效樣本：${logs.filter(isValidTaperSample).length} 筆｜高干擾日：${logs.filter(l=>getRecordInterference(l).isHigh).length} 筆<br>`;
-  html += `<span style="font-size:14px;">有效樣本＝非高干擾日，可用於降藥穩定度判斷；高干擾日仍保留，但不直接支持降藥。</span><br><br>`;
+  html += `<div class="summary-grid">`;
+  html += `
+    <div class="summary-box">
+      <div class="summary-title">🧭 今日判定</div>
+      <div class="summary-main ${latestInfo.cls}">${latestInfo.title}</div>
+      <div class="summary-sub">品質 ${latestInfo.quality}/100｜${latestInfo.sampleText}</div>
+      <div class="summary-sub">${latestInfo.note}</div>
+    </div>`;
+
+  if(s7){
+    html += `
+      <div class="summary-box">
+        <div class="summary-title">📊 最近7筆</div>
+        <div class="compact-line">品質 ${formatNumber(s7.avgQuality,0)}/100 <span class="tag ${trendTag.cls}">${trendTag.text}</span></div>
+        <div class="summary-sub">穩定 ${s7.stableCount}/${s7.count}｜不穩 ${s7.poorCount}/${s7.count}｜有效樣本 ${s7.validCount}/${s7.count}</div>
+      </div>`;
+  }
+
+  html += `
+    <div class="summary-box">
+      <div class="summary-title">🧪 分類品質</div>
+      <div class="compact-line">總紀錄 ${logs.length} 筆｜有效 ${validTotal} 筆｜高干擾 ${highTotal} 筆</div>
+      <div class="summary-sub">高干擾日會保留紀錄，但不直接支持降藥。</div>
+    </div>`;
+  html += `</div>`;
+
+  html += `<details>
+    <summary>展開詳細分析</summary>
+    <div class="detail-content">`;
 
   html += `<strong>週期比較</strong><br>`;
 
@@ -690,12 +838,6 @@ function analyze(){
       `高干擾 ${s.highInterferenceCount} 筆<br>`;
   });
 
-  let recent7=getRecentRecords(7);
-  let recent14=getRecentRecords(14);
-
-  let s7=getGroupStats(recent7);
-  let s14=getGroupStats(recent14);
-
   html += `<br><strong>近期趨勢</strong><br>`;
 
   if(s7){
@@ -714,7 +856,6 @@ function analyze(){
       `有效樣本 ${s14.validCount}/${s14.count}<br>`;
   }
 
-  let latest=logs[logs.length-1];
   let latestInterference=getRecordInterference(latest);
 
   html += `<br><strong>最新紀錄判讀</strong><br>`;
@@ -735,6 +876,11 @@ function analyze(){
   } else {
     html += `這筆不是高干擾日，但睡眠條件尚未穩定，建議繼續觀察。`;
   }
+
+  html += `<br><br><strong>判讀規則</strong><br>`;
+  html += `首頁只顯示今日判定、最近7筆、分類品質；週期比較與細節放在這裡，避免手機版資訊太滿。`;
+
+  html += `</div></details>`;
 
   analysis.innerHTML=html;
 }
