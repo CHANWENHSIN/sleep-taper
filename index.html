@@ -201,6 +201,128 @@ function getSleepQualityScore(l) {
 }
 
 /*
+  睡眠品質分數（0~100）：
+  夜醒 40%、精神 30%、入睡 20%、近期穩定 10%。
+  這是用來做趨勢分析，不直接等於醫療判斷。
+*/
+function getQualityScore100(l, groupRecords){
+  let wakeScore = 0;
+  if(l.wake === 0) wakeScore = 40;
+  else if(l.wake === 1) wakeScore = 26;
+  else wakeScore = 8;
+
+  let energyScore = Math.max(0, Math.min(30, (l.energy / 5) * 30));
+
+  let latencyScore = 0;
+  if(l.latency <= 15) latencyScore = 20;
+  else if(l.latency <= 30) latencyScore = 15;
+  else if(l.latency <= 45) latencyScore = 8;
+  else latencyScore = 2;
+
+  let stabilityScore = 0;
+  if(groupRecords && groupRecords.length >= 3){
+    let stableCount = groupRecords.filter(isStable).length;
+    stabilityScore = Math.round((stableCount / groupRecords.length) * 10);
+  } else {
+    stabilityScore = isStable(l) ? 7 : 3;
+  }
+
+  return Math.round(wakeScore + energyScore + latencyScore + stabilityScore);
+}
+
+/*
+  干擾因子分級：
+  高干擾日不適合拿來直接判斷「是否可以降藥」，
+  但仍保留在歷史與趨勢分析。
+*/
+function getRecordInterference(l){
+  let items = [];
+  let score = 0;
+
+  if(l.coffee === "下午"){
+    items.push("下午咖啡");
+    score += 1;
+  }
+
+  if(l.coffee === "晚上"){
+    items.push("晚上咖啡");
+    score += 2;
+  }
+
+  if(l.supplement){
+    items.push("彰蜆活力");
+    score += 2;
+  }
+
+  if(l.cycleStatus === "before_period"){
+    items.push("生理期前");
+    score += 1;
+  }
+
+  if(l.cycleStatus === "during_period"){
+    items.push("生理期中");
+    score += 2;
+  }
+
+  if(l.cycleStatus === "after_period"){
+    items.push("生理期後");
+    score += 1;
+  }
+
+  let level = "低";
+  if(score >= 3) level = "高";
+  else if(score >= 1) level = "中";
+
+  return {
+    score,
+    level,
+    items,
+    isHigh: score >= 3 || l.cycleStatus === "during_period" || l.coffee === "晚上" || l.supplement
+  };
+}
+
+function isValidTaperSample(l){
+  return !getRecordInterference(l).isHigh;
+}
+
+function avg(records, field){
+  if(!records.length) return 0;
+  return records.reduce((sum, l) => sum + Number(l[field] || 0), 0) / records.length;
+}
+
+function getRecentRecords(days){
+  return logs.slice(-days);
+}
+
+function formatNumber(n, digits=1){
+  return Number(n).toFixed(digits);
+}
+
+function getGroupStats(records){
+  if(!records.length){
+    return null;
+  }
+
+  let qualityScores = records.map(l => getQualityScore100(l, records));
+  let validCount = records.filter(isValidTaperSample).length;
+  let highInterferenceCount = records.filter(l => getRecordInterference(l).isHigh).length;
+  let conservativeCount = records.filter(l => !isStable(l) || getRecordInterference(l).isHigh).length;
+
+  return {
+    count: records.length,
+    avgLatency: avg(records, "latency"),
+    avgWake: avg(records, "wake"),
+    avgEnergy: avg(records, "energy"),
+    avgQuality: qualityScores.reduce((a,b) => a+b, 0) / qualityScores.length,
+    stableCount: records.filter(isStable).length,
+    poorCount: records.filter(isPoorSleep).length,
+    validCount,
+    highInterferenceCount,
+    conservativeRate: conservativeCount / records.length
+  };
+}
+
+/*
   明顯不穩定條件：
   因目前欄位只有「2次以上」，無法區分 2 次或 3 次，
   所以只要選到 2次以上，就先視為需要保守處理。
@@ -312,11 +434,13 @@ function evaluate(){
 
   let stableDays=recent.filter(isStable).length;
   let poorDays=recent.filter(isPoorSleep).length;
+  let validSamples=recent.filter(isValidTaperSample);
+  let latestInterference=getRecordInterference(latest);
 
   let maxStreak=0,cur=0;
 
   recent.forEach(l=>{
-    if(isStable(l)){
+    if(isStable(l) && isValidTaperSample(l)){
       cur++;
       maxStreak=Math.max(maxStreak,cur);
     } else {
@@ -327,11 +451,26 @@ function evaluate(){
   let lastTwo=recent.slice(-2);
   let lastTwoPoor=lastTwo.length === 2 && lastTwo.every(isPoorSleep);
 
+  let interferenceItems=getInterferenceText(recent);
+  let interferenceNote="";
+
+  if(interferenceItems.length>0){
+    interferenceNote=`<br>備註：近期有 ${interferenceItems.join("、")}，已列入保守評估`;
+  }
+
   /*
-    強制保守條件：
-    這些代表近期睡眠品質明顯不穩，
-    不適合進入下一階段評估。
+    最新一天若是高干擾日，不直接當成降藥失敗，
+    但也不能拿來支持降藥。
   */
+  if(latestInterference.isHigh){
+    resultDiv.innerHTML=
+      `🟡 最新紀錄屬於高干擾日（${latestInterference.items.join("、")}）<br>`+
+      `目前建議：先維持目前劑量，等非高干擾日再判斷`+
+      interferenceNote;
+    resultDiv.className="result warn";
+    return;
+  }
+
   if(isPoorSleep(latest)){
     resultDiv.innerHTML=
       `🔴 近期睡眠不穩，暫不建議調整劑量<br>`+
@@ -348,25 +487,41 @@ function evaluate(){
     return;
   }
 
-  if(stableDays < Math.ceil(recent.length * 0.7)){
+  if(validSamples.length < 5){
     resultDiv.innerHTML=
-      `🔴 穩定不足（${stableDays}/${recent.length}）<br>`+
-      `目前建議：維持目前劑量並觀察`;
+      `🟡 可用於降藥判斷的有效樣本不足（${validSamples.length}/5）<br>`+
+      `目前建議：維持目前劑量，繼續累積非高干擾日資料`+
+      interferenceNote;
+    resultDiv.className="result warn";
+    return;
+  }
+
+  let validRecent=validSamples.slice(-7);
+  let validStableDays=validRecent.filter(isStable).length;
+  let validPoorDays=validRecent.filter(isPoorSleep).length;
+  let avgQuality=validRecent.reduce((sum,l)=>sum+getQualityScore100(l, validRecent),0)/validRecent.length;
+
+  if(validStableDays < Math.ceil(validRecent.length * 0.75)){
+    resultDiv.innerHTML=
+      `🔴 有效樣本穩定不足（${validStableDays}/${validRecent.length}）<br>`+
+      `目前建議：維持目前劑量並觀察`+
+      interferenceNote;
     resultDiv.className="result bad";
     return;
   }
 
-  if(stableDays < recent.length - 1){
+  if(validPoorDays > 0){
     resultDiv.innerHTML=
-      `🟡 睡眠尚可，但穩定天數不足（${stableDays}/${recent.length}）<br>`+
-      `目前建議：維持目前劑量再觀察`;
+      `🟡 有效樣本中仍有不穩紀錄<br>`+
+      `目前建議：維持目前劑量再觀察 3～7 天`+
+      interferenceNote;
     resultDiv.className="result warn";
     return;
   }
 
   if(maxStreak < 3){
     resultDiv.innerHTML=
-      `🟡 尚未連續穩定 3 天<br>`+
+      `🟡 尚未連續 3 天有效穩定樣本<br>`+
       `目前建議：維持目前劑量再觀察`;
     resultDiv.className="result warn";
     return;
@@ -374,7 +529,6 @@ function evaluate(){
 
   let latestScore=getSleepQualityScore(latest);
   let interferencePenalty=getInterferencePenalty(recent);
-  let interferenceItems=getInterferenceText(recent);
 
   let stabilityBonus=1;
 
@@ -384,15 +538,21 @@ function evaluate(){
 
   let decisionScore=latestScore + stabilityBonus - interferencePenalty;
 
+  /*
+    7日有效樣本平均品質未達 80，不進入降藥建議。
+  */
+  if(avgQuality < 80){
+    resultDiv.innerHTML=
+      `🟡 睡眠大致穩定，但品質分數尚未達標（${formatNumber(avgQuality,0)}/100）<br>`+
+      `目前建議：維持目前劑量再觀察 3～7 天`+
+      interferenceNote;
+    resultDiv.className="result warn";
+    return;
+  }
+
   let nextMap={0.5:0.375,0.375:0.25,0.25:0.125,0.125:0};
   let currentDose=records[records.length-1].dose;
   let next=nextMap[currentDose];
-
-  let interferenceNote="";
-
-  if(interferenceItems.length>0){
-    interferenceNote=`<br>備註：近期有 ${interferenceItems.join("、")}，已列入保守評估`;
-  }
 
   if(next === undefined){
     resultDiv.innerHTML=
@@ -412,20 +572,11 @@ function evaluate(){
     return;
   }
 
-  if(decisionScore >= 2){
-    resultDiv.innerHTML=
-      `🟡 睡眠大致穩定，但仍建議保守觀察<br>`+
-      `目前建議：維持 ${currentDose}，再觀察 3～7 天`+
-      interferenceNote;
-    resultDiv.className="result warn";
-    return;
-  }
-
   resultDiv.innerHTML=
-    `🔴 近期條件不足，暫不建議調整劑量<br>`+
-    `目前建議：維持目前劑量並觀察`+
+    `🟡 睡眠接近穩定，但仍建議保守觀察<br>`+
+    `目前建議：維持 ${currentDose}，再觀察 3～7 天`+
     interferenceNote;
-  resultDiv.className="result bad";
+  resultDiv.className="result warn";
 }
 
 function saveLog(){
@@ -505,13 +656,87 @@ function analyze(){
     return;
   }
 
-  let before=logs.filter(l=>l.cycleStatus==="before_period");
-  let normal=logs.filter(l=>l.cycleStatus==="normal");
+  const groups=[
+    {key:"normal", label:"平常"},
+    {key:"before_period", label:"生理期前"},
+    {key:"during_period", label:"生理期中"},
+    {key:"after_period", label:"生理期後"}
+  ];
 
-  analysis.innerHTML=
-    `生理期前紀錄：${before.length} 筆<br>`+
-    `平常紀錄：${normal.length} 筆<br>`+
-    `之後可用來比較週期對睡眠的影響。`;
+  let html="";
+
+  html += `<strong>分類品質</strong><br>`;
+  html += `總紀錄：${logs.length} 筆｜有效樣本：${logs.filter(isValidTaperSample).length} 筆｜高干擾日：${logs.filter(l=>getRecordInterference(l).isHigh).length} 筆<br>`;
+  html += `<span style="font-size:14px;">有效樣本＝非高干擾日，可用於降藥穩定度判斷；高干擾日仍保留，但不直接支持降藥。</span><br><br>`;
+
+  html += `<strong>週期比較</strong><br>`;
+
+  groups.forEach(g=>{
+    let records=logs.filter(l=>l.cycleStatus===g.key);
+    let s=getGroupStats(records);
+
+    if(!s){
+      html += `${g.label}：0 筆<br>`;
+      return;
+    }
+
+    html +=
+      `${g.label}：${s.count} 筆｜`+
+      `平均入睡 ${formatNumber(s.avgLatency)} 分｜`+
+      `平均夜醒 ${formatNumber(s.avgWake)} 次｜`+
+      `平均精神 ${formatNumber(s.avgEnergy)}｜`+
+      `品質 ${formatNumber(s.avgQuality,0)}/100｜`+
+      `有效 ${s.validCount} 筆｜`+
+      `高干擾 ${s.highInterferenceCount} 筆<br>`;
+  });
+
+  let recent7=getRecentRecords(7);
+  let recent14=getRecentRecords(14);
+
+  let s7=getGroupStats(recent7);
+  let s14=getGroupStats(recent14);
+
+  html += `<br><strong>近期趨勢</strong><br>`;
+
+  if(s7){
+    html +=
+      `最近7筆：品質 ${formatNumber(s7.avgQuality,0)}/100｜`+
+      `穩定 ${s7.stableCount}/${s7.count}｜`+
+      `不穩 ${s7.poorCount}/${s7.count}｜`+
+      `有效樣本 ${s7.validCount}/${s7.count}<br>`;
+  }
+
+  if(s14 && recent14.length > recent7.length){
+    html +=
+      `最近14筆：品質 ${formatNumber(s14.avgQuality,0)}/100｜`+
+      `穩定 ${s14.stableCount}/${s14.count}｜`+
+      `不穩 ${s14.poorCount}/${s14.count}｜`+
+      `有效樣本 ${s14.validCount}/${s14.count}<br>`;
+  }
+
+  let latest=logs[logs.length-1];
+  let latestInterference=getRecordInterference(latest);
+
+  html += `<br><strong>最新紀錄判讀</strong><br>`;
+  html +=
+    `${latest.date}：品質 ${getQualityScore100(latest, recent7)}/100｜`+
+    `干擾等級：${latestInterference.level}`;
+
+  if(latestInterference.items.length){
+    html += `（${latestInterference.items.join("、")}）`;
+  }
+
+  html += `<br>`;
+
+  if(latestInterference.isHigh){
+    html += `這筆屬於高干擾日：可用來觀察身體狀態，但不建議拿來支持降藥。`;
+  } else if(isStable(latest)){
+    html += `這筆屬於有效穩定樣本：可納入劑量穩定度判斷。`;
+  } else {
+    html += `這筆不是高干擾日，但睡眠條件尚未穩定，建議繼續觀察。`;
+  }
+
+  analysis.innerHTML=html;
 }
 
 window.onload=function(){
