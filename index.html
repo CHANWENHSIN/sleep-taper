@@ -37,10 +37,11 @@ button {
 }
 .delete-btn {
   width: auto;
-  padding: 4px 8px;
-  margin-left: 8px;
+  padding: 5px 10px;
+  margin-left: 0;
   background: #e53935;
   font-size: 12px;
+  border-radius: 8px;
 }
 .result {
   font-size: 18px;
@@ -51,13 +52,6 @@ button {
 .good { color: green; }
 .warn { color: orange; }
 .bad { color: red; }
-ul {
-  padding-left: 18px;
-}
-li {
-  margin-bottom: 8px;
-  line-height: 1.5;
-}
 
 .summary-grid {
   display: grid;
@@ -132,6 +126,72 @@ summary {
   margin-top: 8px;
 }
 
+/* 歷史紀錄表格 */
+.history-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+.history-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: white;
+}
+
+.history-table th {
+  background: #f7f7f7;
+  color: #333;
+  font-weight: bold;
+  padding: 10px 8px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.history-table tr:nth-child(even) {
+  background: #fcfcfc;
+}
+
+.history-note {
+  white-space: normal;
+  line-height: 1.5;
+  min-width: 130px;
+}
+
+.history-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+  background: #f0f0f0;
+}
+
+.badge-period {
+  background: #fce4ec;
+  color: #ad1457;
+}
+
+.badge-coffee {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.badge-supplement {
+  background: #ede7f6;
+  color: #5e35b1;
+}
 </style>
 </head>
 
@@ -194,7 +254,6 @@ summary {
   <div id="result" class="result"></div>
 </div>
 
-
 <div class="card">
   <h3>📈 睡眠品質趨勢</h3>
   <div class="chart-wrap">
@@ -210,7 +269,22 @@ summary {
 
 <div class="card">
   <h3>📋 歷史紀錄</h3>
-  <ul id="history"></ul>
+  <div class="history-table-wrap">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>劑量</th>
+          <th>入睡</th>
+          <th>夜醒</th>
+          <th>精神</th>
+          <th>備註</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="history"></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -242,52 +316,25 @@ function setDefaultDate() {
   document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
 }
 
-/*
-  睡眠穩定判斷：
-  這裡判斷的是「目前劑量下睡眠是否穩定」，
-  不是代表自然睡眠能力已完全恢復。
-*/
 function isStable(l) {
   return l.latency <= 30 && l.wake <= 1 && l.energy >= 3;
 }
 
-/*
-  睡眠品質分級：
-  A級：很好
-  B級：穩定
-  C級：普通
-  D級：不穩
-*/
 function getSleepQualityLevel(l) {
-  if (l.latency <= 15 && l.wake <= 1 && l.energy >= 4) {
-    return "A";
-  }
-
-  if (l.latency <= 30 && l.wake <= 1 && l.energy >= 3) {
-    return "B";
-  }
-
-  if (l.latency <= 45 && l.wake <= 2 && l.energy >= 2) {
-    return "C";
-  }
-
+  if (l.latency <= 15 && l.wake <= 1 && l.energy >= 4) return "A";
+  if (l.latency <= 30 && l.wake <= 1 && l.energy >= 3) return "B";
+  if (l.latency <= 45 && l.wake <= 2 && l.energy >= 2) return "C";
   return "D";
 }
 
 function getSleepQualityScore(l) {
   const level = getSleepQualityLevel(l);
-
   if (level === "A") return 3;
   if (level === "B") return 2;
   if (level === "C") return 1;
   return 0;
 }
 
-/*
-  睡眠品質分數（0~100）：
-  夜醒 40%、精神 30%、入睡 20%、近期穩定 10%。
-  這是用來做趨勢分析，不直接等於醫療判斷。
-*/
 function getQualityScore100(l, groupRecords){
   let wakeScore = 0;
   if(l.wake === 0) wakeScore = 40;
@@ -313,11 +360,6 @@ function getQualityScore100(l, groupRecords){
   return Math.round(wakeScore + energyScore + latencyScore + stabilityScore);
 }
 
-/*
-  干擾因子分級：
-  高干擾日不適合拿來直接判斷「是否可以降藥」，
-  但仍保留在歷史與趨勢分析。
-*/
 function getRecordInterference(l){
   let items = [];
   let score = 0;
@@ -382,9 +424,7 @@ function formatNumber(n, digits=1){
 }
 
 function getGroupStats(records){
-  if(!records.length){
-    return null;
-  }
+  if(!records.length) return null;
 
   let qualityScores = records.map(l => getQualityScore100(l, records));
   let validCount = records.filter(isValidTaperSample).length;
@@ -405,43 +445,18 @@ function getGroupStats(records){
   };
 }
 
-/*
-  明顯不穩定條件：
-  因目前欄位只有「2次以上」，無法區分 2 次或 3 次，
-  所以只要選到 2次以上，就先視為需要保守處理。
-*/
 function isPoorSleep(l) {
   return l.latency > 45 || l.wake >= 2 || l.energy <= 1;
 }
 
-/*
-  干擾因子不再直接阻擋，只作為扣分。
-  早上咖啡不扣分。
-  下午咖啡、晚上咖啡、彰蜆、生理期前/中，作為風險修正。
-  扣分最多 -2，避免人生正常波動導致永遠不能進入評估。
-*/
 function getInterferencePenalty(records) {
   let penalty = 0;
 
-  if (records.some(l => l.coffee === "下午")) {
-    penalty += 1;
-  }
-
-  if (records.some(l => l.coffee === "晚上")) {
-    penalty += 2;
-  }
-
-  if (records.some(l => l.supplement)) {
-    penalty += 1;
-  }
-
-  if (records.some(l => l.cycleStatus === "before_period")) {
-    penalty += 1;
-  }
-
-  if (records.some(l => l.cycleStatus === "during_period")) {
-    penalty += 1;
-  }
+  if (records.some(l => l.coffee === "下午")) penalty += 1;
+  if (records.some(l => l.coffee === "晚上")) penalty += 2;
+  if (records.some(l => l.supplement)) penalty += 1;
+  if (records.some(l => l.cycleStatus === "before_period")) penalty += 1;
+  if (records.some(l => l.cycleStatus === "during_period")) penalty += 1;
 
   return Math.min(penalty, 2);
 }
@@ -449,25 +464,11 @@ function getInterferencePenalty(records) {
 function getInterferenceText(records) {
   let items = [];
 
-  if (records.some(l => l.coffee === "下午")) {
-    items.push("下午咖啡");
-  }
-
-  if (records.some(l => l.coffee === "晚上")) {
-    items.push("晚上咖啡");
-  }
-
-  if (records.some(l => l.supplement)) {
-    items.push("彰蜆活力");
-  }
-
-  if (records.some(l => l.cycleStatus === "before_period")) {
-    items.push("生理期前");
-  }
-
-  if (records.some(l => l.cycleStatus === "during_period")) {
-    items.push("生理期中");
-  }
+  if (records.some(l => l.coffee === "下午")) items.push("下午咖啡");
+  if (records.some(l => l.coffee === "晚上")) items.push("晚上咖啡");
+  if (records.some(l => l.supplement)) items.push("彰蜆活力");
+  if (records.some(l => l.cycleStatus === "before_period")) items.push("生理期前");
+  if (records.some(l => l.cycleStatus === "during_period")) items.push("生理期中");
 
   return items;
 }
@@ -541,10 +542,6 @@ function evaluate(){
     interferenceNote=`<br>備註：近期有 ${interferenceItems.join("、")}，已列入保守評估`;
   }
 
-  /*
-    最新一天若是高干擾日，不直接當成降藥失敗，
-    但也不能拿來支持降藥。
-  */
   if(latestInterference.isHigh){
     resultDiv.innerHTML=
       `🟡 最新紀錄屬於高干擾日（${latestInterference.items.join("、")}）<br>`+
@@ -621,9 +618,6 @@ function evaluate(){
 
   let decisionScore=latestScore + stabilityBonus - interferencePenalty;
 
-  /*
-    7日有效樣本平均品質未達 80，不進入降藥建議。
-  */
   if(avgQuality < 80){
     resultDiv.innerHTML=
       `🟡 睡眠大致穩定，但品質分數尚未達標（${formatNumber(avgQuality,0)}/100）<br>`+
@@ -666,7 +660,8 @@ function saveLog(){
   let date=document.getElementById("date").value;
 
   if(logs.some(l=>l.date===date)){
-    alert("當天已存在");return;
+    alert("當天已存在");
+    return;
   }
 
   logs.push({
@@ -690,7 +685,7 @@ function saveLog(){
 }
 
 function deleteLog(i){
-  if(!confirm("刪除?"))return;
+  if(!confirm("刪除?")) return;
   logs.splice(i,1);
   localStorage.setItem(STORAGE_KEY,JSON.stringify(logs));
   renderHistory();
@@ -710,26 +705,45 @@ function getCycleText(value){
 }
 
 function renderHistory(){
-  const historyList=document.getElementById("history");
-  historyList.innerHTML="";
+  const historyBody=document.getElementById("history");
+  historyBody.innerHTML="";
 
   if(logs.length===0){
-    historyList.innerHTML="<li>尚無紀錄</li>";
+    historyBody.innerHTML=`
+      <tr>
+        <td colspan="7">尚無紀錄</td>
+      </tr>
+    `;
     return;
   }
 
   logs.slice().reverse().forEach(l=>{
     let idx=logs.findIndex(x=>x.date===l.date);
-    let li=document.createElement("li");
+    let tr=document.createElement("tr");
 
-    li.innerHTML=
-    `${l.date}｜${l.dose}｜入睡${l.latency}｜醒${l.wake}｜精神${l.energy}`
-    +(l.supplement?"｜彰蜆":"")
-    +(l.coffee?`｜咖啡:${l.coffee}`:"")
-    +`｜週期:${getCycleText(l.cycleStatus)}`
-    +` <button class="delete-btn" onclick="deleteLog(${idx})">刪</button>`;
+    let notes="";
 
-    historyList.appendChild(li);
+    if(l.supplement){
+      notes += `<span class="history-badge badge-supplement">彰蜆</span>`;
+    }
+
+    if(l.coffee){
+      notes += `<span class="history-badge badge-coffee">咖啡:${l.coffee}</span>`;
+    }
+
+    notes += `<span class="history-badge badge-period">${getCycleText(l.cycleStatus)}</span>`;
+
+    tr.innerHTML=`
+      <td>${l.date}</td>
+      <td>${l.dose}</td>
+      <td>${l.latency}分</td>
+      <td>${l.wake}</td>
+      <td>${l.energy}</td>
+      <td class="history-note">${notes}</td>
+      <td><button class="delete-btn" onclick="deleteLog(${idx})">刪</button></td>
+    `;
+
+    historyBody.appendChild(tr);
   });
 }
 
@@ -787,7 +801,6 @@ function getLatestJudgement(latest, recent7){
   };
 }
 
-
 function renderQualityChart(){
   const canvas=document.getElementById("qualityChart");
   const note=document.getElementById("qualityChartNote");
@@ -828,7 +841,6 @@ function renderQualityChart(){
     return padding.top + (100-score)/100*chartH;
   }
 
-  // 背景區：80以上穩定、70~80觀察、70以下偏弱
   ctx.fillStyle="#e8f5e9";
   ctx.fillRect(padding.left,padding.top,chartW,y(80)-padding.top);
 
@@ -838,7 +850,6 @@ function renderQualityChart(){
   ctx.fillStyle="#ffebee";
   ctx.fillRect(padding.left,y(70),chartW,padding.top+chartH-y(70));
 
-  // 格線與標籤
   ctx.strokeStyle="#ddd";
   ctx.lineWidth=1;
   ctx.font="12px Arial";
@@ -853,7 +864,6 @@ function renderQualityChart(){
     ctx.fillText(String(v),4,yy+4);
   });
 
-  // 趨勢線
   ctx.strokeStyle="#4CAF50";
   ctx.lineWidth=2;
   ctx.beginPath();
@@ -865,7 +875,6 @@ function renderQualityChart(){
   });
   ctx.stroke();
 
-  // 點：高干擾日用橘色，一般日用綠色
   records.forEach((l,i)=>{
     const xx=x(i);
     const yy=y(scores[i]);
@@ -879,7 +888,6 @@ function renderQualityChart(){
     ctx.stroke();
   });
 
-  // X 軸日期：只顯示第一天、最後一天，中間資料多時顯示中點
   ctx.fillStyle="#666";
   ctx.font="12px Arial";
   const first=records[0].date.slice(5);
@@ -907,7 +915,6 @@ function renderQualityChart(){
     `最近${records.length}筆品質平均 ${formatNumber(avgScore,0)}/100｜`+
     `最新 ${latestScore}/100｜高干擾 ${highCount} 筆｜狀態：${status}`;
 }
-
 
 function analyze(){
   let analysis=document.getElementById("analysis");
