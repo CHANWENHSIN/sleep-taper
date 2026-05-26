@@ -6,192 +6,45 @@
 <title>睡眠決策中心</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-  padding: 15px;
-}
-.card {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 15px;
-}
-label {
-  font-weight: bold;
-}
-input, select {
-  width: 100%;
-  padding: 8px;
-  margin-top: 6px;
-  box-sizing: border-box;
-}
-button {
-  padding: 12px;
-  width: 100%;
-  border: none;
-  border-radius: 8px;
-  background: #4CAF50;
-  color: white;
-  font-size: 16px;
-}
-.delete-btn {
-  width: auto;
-  padding: 5px 10px;
-  margin-left: 0;
-  background: #e53935;
-  font-size: 12px;
-  border-radius: 8px;
-}
-.result {
-  font-size: 18px;
-  font-weight: bold;
-  text-align: center;
-  line-height: 1.6;
-}
+body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 15px; }
+.card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+label { font-weight: bold; }
+input, select { width: 100%; padding: 8px; margin-top: 6px; box-sizing: border-box; }
+button { padding: 12px; width: 100%; border: none; border-radius: 8px; background: #4CAF50; color: white; font-size: 16px; }
+.delete-btn { width: auto; padding: 5px 10px; margin-left: 0; background: #e53935; font-size: 12px; border-radius: 8px; }
+.result { font-size: 18px; font-weight: bold; text-align: center; line-height: 1.6; }
 .good { color: green; }
 .warn { color: orange; }
 .bad { color: red; }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.summary-box {
-  background: #f8f8f8;
-  border-radius: 10px;
-  padding: 12px;
-  line-height: 1.5;
-}
-.summary-title {
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-.summary-main {
-  font-size: 22px;
-  font-weight: bold;
-}
-.summary-sub {
-  color: #555;
-  font-size: 14px;
-}
-.compact-line {
-  line-height: 1.7;
-  margin-bottom: 6px;
-}
-details {
-  margin-top: 12px;
-  border-top: 1px solid #eee;
-  padding-top: 10px;
-}
-summary {
-  cursor: pointer;
-  font-weight: bold;
-  color: #444;
-}
-.detail-content {
-  margin-top: 10px;
-  font-size: 15px;
-  line-height: 1.7;
-  color: #333;
-}
-.tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 13px;
-  margin-left: 4px;
-  background: #eee;
-}
+.summary-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+.summary-box { background: #f8f8f8; border-radius: 10px; padding: 12px; line-height: 1.5; }
+.summary-title { font-weight: bold; margin-bottom: 4px; }
+.summary-main { font-size: 22px; font-weight: bold; }
+.summary-sub { color: #555; font-size: 14px; }
+.compact-line { line-height: 1.7; margin-bottom: 6px; }
+details { margin-top: 12px; border-top: 1px solid #eee; padding-top: 10px; }
+summary { cursor: pointer; font-weight: bold; color: #444; }
+.detail-content { margin-top: 10px; font-size: 15px; line-height: 1.7; color: #333; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 13px; margin-left: 4px; background: #eee; }
 .tag-good { background: #e8f5e9; color: #2e7d32; }
 .tag-warn { background: #fff8e1; color: #f57f17; }
 .tag-bad { background: #ffebee; color: #c62828; }
 
-.chart-wrap {
-  width: 100%;
-  height: 230px;
-  position: relative;
-}
-#qualityChart {
-  width: 100%;
-  height: 230px;
-  display: block;
-}
-.chart-note {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.5;
-  margin-top: 8px;
-}
+.chart-wrap { width: 100%; height: 230px; position: relative; }
+#qualityChart { width: 100%; height: 230px; display: block; }
+.chart-note { font-size: 13px; color: #666; line-height: 1.5; margin-top: 8px; }
 
-/* 歷史紀錄表格 */
-.history-table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  margin-top: 8px;
-}
-
-.history-table {
-  width: 100%;
-  min-width: 680px;
-  border-collapse: collapse;
-  font-size: 14px;
-  background: white;
-}
-
-.history-table th {
-  background: #f7f7f7;
-  color: #333;
-  font-weight: bold;
-  padding: 10px 8px;
-  border-bottom: 1px solid #ddd;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.history-table td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #eee;
-  vertical-align: top;
-  white-space: nowrap;
-}
-
-.history-table tr:nth-child(even) {
-  background: #fcfcfc;
-}
-
-.history-note {
-  white-space: normal;
-  line-height: 1.5;
-  min-width: 130px;
-}
-
-.history-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  margin-right: 4px;
-  margin-bottom: 4px;
-  background: #f0f0f0;
-}
-
-.badge-period {
-  background: #fce4ec;
-  color: #ad1457;
-}
-
-.badge-coffee {
-  background: #fff3e0;
-  color: #ef6c00;
-}
-
-.badge-supplement {
-  background: #ede7f6;
-  color: #5e35b1;
-}
+.history-table-wrap { width: 100%; overflow-x: auto; margin-top: 8px; }
+.history-table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; background: white; }
+.history-table th { background: #f7f7f7; color: #333; font-weight: bold; padding: 10px 8px; border-bottom: 1px solid #ddd; text-align: left; white-space: nowrap; }
+.history-table td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: top; white-space: nowrap; }
+.history-table tr:nth-child(even) { background: #fcfcfc; }
+.history-note { white-space: normal; line-height: 1.5; min-width: 130px; }
+.history-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; margin-right: 4px; margin-bottom: 4px; background: #f0f0f0; }
+.badge-period { background: #fce4ec; color: #ad1457; }
+.badge-coffee { background: #fff3e0; color: #ef6c00; }
+.badge-support { background: #e3f2fd; color: #1565c0; }
 </style>
 </head>
 
@@ -227,8 +80,10 @@ summary {
 
   <label>
     <input type="checkbox" id="supplement" style="width:auto;">
-    有吃彰蜆活力
-  </label><br><br>
+    睡前有吃保肝＋濱松
+  </label><br>
+  <span style="font-size:13px;color:#666;">營養師建議：睡前各一顆，作為放鬆／助眠支持因子。</span>
+  <br><br>
 
   <label>咖啡：</label>
   <select id="coffee">
@@ -308,12 +163,8 @@ localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
 function setDefaultDate() {
   let d = new Date();
   d.setDate(d.getDate() - 1);
-
-  let yyyy = d.getFullYear();
-  let mm = String(d.getMonth() + 1).padStart(2, '0');
-  let dd = String(d.getDate()).padStart(2, '0');
-
-  document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
+  document.getElementById("date").value =
+    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
 function isStable(l) {
@@ -336,11 +187,7 @@ function getSleepQualityScore(l) {
 }
 
 function getQualityScore100(l, groupRecords){
-  let wakeScore = 0;
-  if(l.wake === 0) wakeScore = 40;
-  else if(l.wake === 1) wakeScore = 26;
-  else wakeScore = 8;
-
+  let wakeScore = l.wake === 0 ? 40 : l.wake === 1 ? 26 : 8;
   let energyScore = Math.max(0, Math.min(30, (l.energy / 5) * 30));
 
   let latencyScore = 0;
@@ -364,35 +211,11 @@ function getRecordInterference(l){
   let items = [];
   let score = 0;
 
-  if(l.coffee === "下午"){
-    items.push("下午咖啡");
-    score += 1;
-  }
-
-  if(l.coffee === "晚上"){
-    items.push("晚上咖啡");
-    score += 2;
-  }
-
-  if(l.supplement){
-    items.push("彰蜆活力");
-    score += 2;
-  }
-
-  if(l.cycleStatus === "before_period"){
-    items.push("生理期前");
-    score += 1;
-  }
-
-  if(l.cycleStatus === "during_period"){
-    items.push("生理期中");
-    score += 2;
-  }
-
-  if(l.cycleStatus === "after_period"){
-    items.push("生理期後");
-    score += 1;
-  }
+  if(l.coffee === "下午"){ items.push("下午咖啡"); score += 1; }
+  if(l.coffee === "晚上"){ items.push("晚上咖啡"); score += 2; }
+  if(l.cycleStatus === "before_period"){ items.push("生理期前"); score += 1; }
+  if(l.cycleStatus === "during_period"){ items.push("生理期中"); score += 2; }
+  if(l.cycleStatus === "after_period"){ items.push("生理期後"); score += 1; }
 
   let level = "低";
   if(score >= 3) level = "高";
@@ -402,8 +225,18 @@ function getRecordInterference(l){
     score,
     level,
     items,
-    isHigh: score >= 3 || l.cycleStatus === "during_period" || l.coffee === "晚上" || l.supplement
+    isHigh: score >= 3 || l.cycleStatus === "during_period" || l.coffee === "晚上"
   };
+}
+
+function hasSleepSupport(l){
+  return Boolean(l.supplement);
+}
+
+function getSleepSupportBonus(records){
+  let supportCount = records.filter(hasSleepSupport).length;
+  if(records.length >= 5 && supportCount >= 3) return 1;
+  return 0;
 }
 
 function isValidTaperSample(l){
@@ -423,13 +256,17 @@ function formatNumber(n, digits=1){
   return Number(n).toFixed(digits);
 }
 
+function isPoorSleep(l) {
+  return l.latency > 45 || l.wake >= 2 || l.energy <= 1;
+}
+
 function getGroupStats(records){
   if(!records.length) return null;
 
   let qualityScores = records.map(l => getQualityScore100(l, records));
   let validCount = records.filter(isValidTaperSample).length;
   let highInterferenceCount = records.filter(l => getRecordInterference(l).isHigh).length;
-  let conservativeCount = records.filter(l => !isStable(l) || getRecordInterference(l).isHigh).length;
+  let supportCount = records.filter(hasSleepSupport).length;
 
   return {
     count: records.length,
@@ -441,35 +278,25 @@ function getGroupStats(records){
     poorCount: records.filter(isPoorSleep).length,
     validCount,
     highInterferenceCount,
-    conservativeRate: conservativeCount / records.length
+    supportCount
   };
-}
-
-function isPoorSleep(l) {
-  return l.latency > 45 || l.wake >= 2 || l.energy <= 1;
 }
 
 function getInterferencePenalty(records) {
   let penalty = 0;
-
   if (records.some(l => l.coffee === "下午")) penalty += 1;
   if (records.some(l => l.coffee === "晚上")) penalty += 2;
-  if (records.some(l => l.supplement)) penalty += 1;
   if (records.some(l => l.cycleStatus === "before_period")) penalty += 1;
   if (records.some(l => l.cycleStatus === "during_period")) penalty += 1;
-
   return Math.min(penalty, 2);
 }
 
 function getInterferenceText(records) {
   let items = [];
-
   if (records.some(l => l.coffee === "下午")) items.push("下午咖啡");
   if (records.some(l => l.coffee === "晚上")) items.push("晚上咖啡");
-  if (records.some(l => l.supplement)) items.push("彰蜆活力");
   if (records.some(l => l.cycleStatus === "before_period")) items.push("生理期前");
   if (records.some(l => l.cycleStatus === "during_period")) items.push("生理期中");
-
   return items;
 }
 
@@ -487,12 +314,11 @@ function getContinuousSameDose(){
   for(let i=logs.length-2;i>=0;i--){
     let prev=logs[i];
     let curr=result[0];
-
     if(prev.dose!==last.dose) break;
     if(dayDiff(prev.date,curr.date)!==1) break;
-
     result.unshift(prev);
   }
+
   return result;
 }
 
@@ -522,7 +348,6 @@ function evaluate(){
   let latestInterference=getRecordInterference(latest);
 
   let maxStreak=0,cur=0;
-
   recent.forEach(l=>{
     if(isStable(l) && isValidTaperSample(l)){
       cur++;
@@ -536,10 +361,15 @@ function evaluate(){
   let lastTwoPoor=lastTwo.length === 2 && lastTwo.every(isPoorSleep);
 
   let interferenceItems=getInterferenceText(recent);
-  let interferenceNote="";
+  let supportCount=recent.filter(hasSleepSupport).length;
 
+  let interferenceNote="";
   if(interferenceItems.length>0){
     interferenceNote=`<br>備註：近期有 ${interferenceItems.join("、")}，已列入保守評估`;
+  }
+
+  if(supportCount>0){
+    interferenceNote += `<br>助眠支持：近期 ${supportCount}/${recent.length} 天有睡前保肝＋濱松`;
   }
 
   if(latestInterference.isHigh){
@@ -554,7 +384,8 @@ function evaluate(){
   if(isPoorSleep(latest)){
     resultDiv.innerHTML=
       `🔴 近期睡眠不穩，暫不建議調整劑量<br>`+
-      `目前建議：維持目前劑量並觀察`;
+      `目前建議：維持目前劑量並觀察`+
+      interferenceNote;
     resultDiv.className="result bad";
     return;
   }
@@ -562,7 +393,8 @@ function evaluate(){
   if(lastTwoPoor){
     resultDiv.innerHTML=
       `🔴 連續兩天睡眠品質變差，暫不建議調整劑量<br>`+
-      `目前建議：維持目前劑量並觀察`;
+      `目前建議：維持目前劑量並觀察`+
+      interferenceNote;
     resultDiv.className="result bad";
     return;
   }
@@ -602,21 +434,22 @@ function evaluate(){
   if(maxStreak < 3){
     resultDiv.innerHTML=
       `🟡 尚未連續 3 天有效穩定樣本<br>`+
-      `目前建議：維持目前劑量再觀察`;
+      `目前建議：維持目前劑量再觀察`+
+      interferenceNote;
     resultDiv.className="result warn";
     return;
   }
 
   let latestScore=getSleepQualityScore(latest);
   let interferencePenalty=getInterferencePenalty(recent);
+  let supportBonus=getSleepSupportBonus(validRecent);
 
   let stabilityBonus=1;
-
   if(recent.length >= 7 && poorDays === 0 && stableDays >= recent.length - 1){
     stabilityBonus=2;
   }
 
-  let decisionScore=latestScore + stabilityBonus - interferencePenalty;
+  let decisionScore=latestScore + stabilityBonus + supportBonus - interferencePenalty;
 
   if(avgQuality < 80){
     resultDiv.innerHTML=
@@ -709,22 +542,17 @@ function renderHistory(){
   historyBody.innerHTML="";
 
   if(logs.length===0){
-    historyBody.innerHTML=`
-      <tr>
-        <td colspan="7">尚無紀錄</td>
-      </tr>
-    `;
+    historyBody.innerHTML=`<tr><td colspan="7">尚無紀錄</td></tr>`;
     return;
   }
 
   logs.slice().reverse().forEach(l=>{
     let idx=logs.findIndex(x=>x.date===l.date);
     let tr=document.createElement("tr");
-
     let notes="";
 
     if(l.supplement){
-      notes += `<span class="history-badge badge-supplement">彰蜆</span>`;
+      notes += `<span class="history-badge badge-support">保肝＋濱松</span>`;
     }
 
     if(l.coffee){
@@ -761,6 +589,7 @@ function getTrendTag(stats){
 function getLatestJudgement(latest, recent7){
   let interference=getRecordInterference(latest);
   let quality=getQualityScore100(latest, recent7);
+  let supportText = latest.supplement ? "｜有睡前保肝＋濱松" : "";
 
   if(interference.isHigh){
     return {
@@ -768,7 +597,7 @@ function getLatestJudgement(latest, recent7){
       cls:"warn",
       quality,
       sampleText:"不列入降藥支持樣本",
-      note: interference.items.length ? interference.items.join("、") : "高干擾因素"
+      note:(interference.items.length ? interference.items.join("、") : "高干擾因素") + supportText
     };
   }
 
@@ -778,7 +607,7 @@ function getLatestJudgement(latest, recent7){
       cls:"bad",
       quality,
       sampleText:"不建議調整",
-      note:"先觀察睡眠是否恢復穩定"
+      note:"先觀察睡眠是否恢復穩定" + supportText
     };
   }
 
@@ -788,7 +617,7 @@ function getLatestJudgement(latest, recent7){
       cls:"good",
       quality,
       sampleText:"有效穩定樣本",
-      note:"可納入劑量穩定度判斷"
+      note:"可納入劑量穩定度判斷" + supportText
     };
   }
 
@@ -797,7 +626,7 @@ function getLatestJudgement(latest, recent7){
     cls:"warn",
     quality,
     sampleText:"繼續觀察",
-    note:"不是高干擾日，但條件還不夠穩"
+    note:"不是高干擾日，但條件還不夠穩" + supportText
   };
 }
 
@@ -881,7 +710,7 @@ function renderQualityChart(){
     const interference=getRecordInterference(l);
     ctx.beginPath();
     ctx.arc(xx,yy,4,0,Math.PI*2);
-    ctx.fillStyle=interference.isHigh ? "#f57c00" : "#2e7d32";
+    ctx.fillStyle=interference.isHigh ? "#f57c00" : (l.supplement ? "#1565c0" : "#2e7d32");
     ctx.fill();
     ctx.strokeStyle="#fff";
     ctx.lineWidth=1.5;
@@ -906,6 +735,7 @@ function renderQualityChart(){
   const latestScore=scores[scores.length-1];
   const avgScore=scores.reduce((a,b)=>a+b,0)/scores.length;
   const highCount=records.filter(l=>getRecordInterference(l).isHigh).length;
+  const supportCount=records.filter(hasSleepSupport).length;
 
   let status="需觀察";
   if(avgScore>=85 && latestScore>=80) status="穩定";
@@ -913,7 +743,7 @@ function renderQualityChart(){
 
   note.innerHTML=
     `最近${records.length}筆品質平均 ${formatNumber(avgScore,0)}/100｜`+
-    `最新 ${latestScore}/100｜高干擾 ${highCount} 筆｜狀態：${status}`;
+    `最新 ${latestScore}/100｜高干擾 ${highCount} 筆｜助眠支持 ${supportCount} 筆｜狀態：${status}`;
 }
 
 function analyze(){
@@ -941,6 +771,7 @@ function analyze(){
 
   let validTotal=logs.filter(isValidTaperSample).length;
   let highTotal=logs.filter(l=>getRecordInterference(l).isHigh).length;
+  let supportTotal=logs.filter(hasSleepSupport).length;
 
   let html="";
 
@@ -958,15 +789,15 @@ function analyze(){
       <div class="summary-box">
         <div class="summary-title">📊 最近7筆</div>
         <div class="compact-line">品質 ${formatNumber(s7.avgQuality,0)}/100 <span class="tag ${trendTag.cls}">${trendTag.text}</span></div>
-        <div class="summary-sub">穩定 ${s7.stableCount}/${s7.count}｜不穩 ${s7.poorCount}/${s7.count}｜有效樣本 ${s7.validCount}/${s7.count}</div>
+        <div class="summary-sub">穩定 ${s7.stableCount}/${s7.count}｜不穩 ${s7.poorCount}/${s7.count}｜有效樣本 ${s7.validCount}/${s7.count}｜助眠支持 ${s7.supportCount}/${s7.count}</div>
       </div>`;
   }
 
   html += `
     <div class="summary-box">
       <div class="summary-title">🧪 分類品質</div>
-      <div class="compact-line">總紀錄 ${logs.length} 筆｜有效 ${validTotal} 筆｜高干擾 ${highTotal} 筆</div>
-      <div class="summary-sub">高干擾日會保留紀錄，但不直接支持降藥。</div>
+      <div class="compact-line">總紀錄 ${logs.length} 筆｜有效 ${validTotal} 筆｜高干擾 ${highTotal} 筆｜助眠支持 ${supportTotal} 筆</div>
+      <div class="summary-sub">保肝＋濱松視為放鬆／助眠支持因子，不列為高干擾。</div>
     </div>`;
   html += `</div>`;
 
@@ -992,7 +823,8 @@ function analyze(){
       `平均精神 ${formatNumber(s.avgEnergy)}｜`+
       `品質 ${formatNumber(s.avgQuality,0)}/100｜`+
       `有效 ${s.validCount} 筆｜`+
-      `高干擾 ${s.highInterferenceCount} 筆<br>`;
+      `高干擾 ${s.highInterferenceCount} 筆｜`+
+      `助眠支持 ${s.supportCount} 筆<br>`;
   });
 
   html += `<br><strong>近期趨勢</strong><br>`;
@@ -1002,7 +834,8 @@ function analyze(){
       `最近7筆：品質 ${formatNumber(s7.avgQuality,0)}/100｜`+
       `穩定 ${s7.stableCount}/${s7.count}｜`+
       `不穩 ${s7.poorCount}/${s7.count}｜`+
-      `有效樣本 ${s7.validCount}/${s7.count}<br>`;
+      `有效樣本 ${s7.validCount}/${s7.count}｜`+
+      `助眠支持 ${s7.supportCount}/${s7.count}<br>`;
   }
 
   if(s14 && recent14.length > recent7.length){
@@ -1010,7 +843,8 @@ function analyze(){
       `最近14筆：品質 ${formatNumber(s14.avgQuality,0)}/100｜`+
       `穩定 ${s14.stableCount}/${s14.count}｜`+
       `不穩 ${s14.poorCount}/${s14.count}｜`+
-      `有效樣本 ${s14.validCount}/${s14.count}<br>`;
+      `有效樣本 ${s14.validCount}/${s14.count}｜`+
+      `助眠支持 ${s14.supportCount}/${s14.count}<br>`;
   }
 
   let latestInterference=getRecordInterference(latest);
@@ -1024,6 +858,10 @@ function analyze(){
     html += `（${latestInterference.items.join("、")}）`;
   }
 
+  if(latest.supplement){
+    html += `｜有睡前保肝＋濱松`;
+  }
+
   html += `<br>`;
 
   if(latestInterference.isHigh){
@@ -1035,7 +873,7 @@ function analyze(){
   }
 
   html += `<br><br><strong>判讀規則</strong><br>`;
-  html += `首頁只顯示今日判定、最近7筆、分類品質；週期比較與細節放在這裡，避免手機版資訊太滿。`;
+  html += `保肝＋濱松被視為助眠支持因子：不會被當成干擾，也不會讓不穩紀錄直接變成穩定；只有在近期有效樣本已經穩定時，才會給予小幅正向加分。`;
 
   html += `</div></details>`;
 
