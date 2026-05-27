@@ -6,27 +6,111 @@
 <title>睡眠決策中心</title>
 
 <style>
-body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 15px; }
-.card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-label { font-weight: bold; }
-input, select { width: 100%; padding: 8px; margin-top: 6px; box-sizing: border-box; }
-button { padding: 12px; width: 100%; border: none; border-radius: 8px; background: #4CAF50; color: white; font-size: 16px; }
-.delete-btn { width: auto; padding: 5px 10px; background: #e53935; font-size: 12px; border-radius: 8px; }
-.result { font-size: 18px; font-weight: bold; text-align: center; line-height: 1.6; }
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  padding: 15px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+
+label {
+  font-weight: bold;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #4CAF50;
+  color: white;
+  font-size: 16px;
+}
+
+.delete-btn {
+  width: auto;
+  padding: 5px 10px;
+  background: #e53935;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.result {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.6;
+}
+
 .good { color: green; }
 .warn { color: orange; }
 .bad { color: red; }
 
-.summary-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
-.summary-box { background: #f8f8f8; border-radius: 10px; padding: 12px; line-height: 1.5; }
-.summary-title { font-weight: bold; margin-bottom: 4px; }
-.summary-main { font-size: 22px; font-weight: bold; }
-.summary-sub { color: #555; font-size: 14px; }
-.compact-line { line-height: 1.7; margin-bottom: 6px; }
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
 
-details { margin-top: 12px; border-top: 1px solid #eee; padding-top: 10px; }
-summary { cursor: pointer; font-weight: bold; color: #444; }
-.detail-content { margin-top: 10px; font-size: 15px; line-height: 1.7; color: #333; }
+.summary-box {
+  background: #f8f8f8;
+  border-radius: 10px;
+  padding: 12px;
+  line-height: 1.5;
+}
+
+.summary-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.summary-main {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.summary-sub {
+  color: #555;
+  font-size: 14px;
+}
+
+.compact-line {
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+
+details {
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: bold;
+  color: #444;
+}
+
+.detail-content {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
 
 .tag {
   display: inline-block;
@@ -36,12 +120,33 @@ summary { cursor: pointer; font-weight: bold; color: #444; }
   margin-left: 4px;
   background: #eee;
 }
-.tag-good { background: #e8f5e9; color: #2e7d32; }
-.tag-warn { background: #fff8e1; color: #f57f17; }
-.tag-bad { background: #ffebee; color: #c62828; }
 
-.chart-wrap { width: 100%; height: 230px; position: relative; }
-#qualityChart { width: 100%; height: 230px; display: block; }
+.tag-good {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.tag-warn {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.tag-bad {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.chart-wrap {
+  width: 100%;
+  height: 230px;
+  position: relative;
+}
+
+#qualityChart {
+  width: 100%;
+  height: 230px;
+  display: block;
+}
 
 .chart-note {
   font-size: 13px;
@@ -58,7 +163,7 @@ summary { cursor: pointer; font-weight: bold; color: #444; }
 
 .history-table {
   width: 100%;
-  min-width: 720px;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 14px;
   background: white;
@@ -88,7 +193,7 @@ summary { cursor: pointer; font-weight: bold; color: #444; }
 .history-note {
   white-space: normal;
   line-height: 1.5;
-  min-width: 150px;
+  min-width: 170px;
 }
 
 .history-badge {
@@ -120,6 +225,11 @@ summary { cursor: pointer; font-weight: bold; color: #444; }
   color: #2e7d32;
 }
 
+.badge-exercise {
+  background: #ede7f6;
+  color: #5e35b1;
+}
+
 .helper-text {
   font-size: 13px;
   color: #666;
@@ -135,115 +245,133 @@ summary { cursor: pointer; font-weight: bold; color: #444; }
 
 <div class="card">
 
-  <label>記錄日期：</label>
-  <input type="date" id="date"><br><br>
+<label>記錄日期：</label>
+<input type="date" id="date"><br><br>
 
-  <label>劑量：</label>
-  <select id="dose">
-    <option value="0.5">0.5</option>
-    <option value="0.375">0.375</option>
-    <option value="0.25">0.25</option>
-    <option value="0.125">0.125</option>
-    <option value="0">0</option>
-  </select><br><br>
+<label>劑量：</label>
+<select id="dose">
+  <option value="0.5">0.5</option>
+  <option value="0.375">0.375</option>
+  <option value="0.25">0.25</option>
+  <option value="0.125">0.125</option>
+  <option value="0">0</option>
+</select><br><br>
 
-  <label>入睡時間（分鐘）：</label>
-  <input type="number" id="latency" min="0"><br><br>
+<label>入睡時間（分鐘）：</label>
+<input type="number" id="latency" min="0"><br><br>
 
-  <label>半夜醒來：</label>
-  <select id="wake">
-    <option value="0">0次</option>
-    <option value="1">1次</option>
-    <option value="2">2次以上</option>
-  </select><br><br>
+<label>半夜醒來：</label>
+<select id="wake">
+  <option value="0">0次</option>
+  <option value="1">1次</option>
+  <option value="2">2次以上</option>
+</select><br><br>
 
-  <label>起床精神（1~5）：</label>
-  <input type="number" id="energy" min="1" max="5" value="3"><br><br>
+<label>起床精神（1~5）：</label>
+<input type="number" id="energy" min="1" max="5" value="3"><br><br>
 
-  <label>
-    <input type="checkbox" id="supplement" style="width:auto;">
-    睡前有吃保肝＋濱松
-  </label>
+<label>
+  <input type="checkbox" id="supplement" style="width:auto;">
+  睡前有吃保肝＋濱松
+</label>
 
-  <div class="helper-text">
-    營養師建議：睡前各一顆，作為放鬆／助眠支持因子。
-  </div>
+<div class="helper-text">
+營養師建議：睡前各一顆，作為放鬆／助眠支持因子。
+</div>
 
-  <br>
+<br>
 
-  <label>
-    <input type="checkbox" id="ivTherapy" style="width:auto;">
-    今天有打營養針
-  </label>
+<label>
+  <input type="checkbox" id="ivTherapy" style="width:auto;">
+  今天有打營養針
+</label>
 
-  <div class="helper-text">
-    作為放鬆與恢復支持因子，會納入睡眠穩定度分析。
-  </div>
+<div class="helper-text">
+作為放鬆與恢復支持因子，會納入睡眠穩定度分析。
+</div>
 
-  <br>
+<br>
 
-  <label>咖啡：</label>
-  <select id="coffee">
-    <option value="">無</option>
-    <option value="早上">早上</option>
-    <option value="下午">下午</option>
-    <option value="晚上">晚上</option>
-  </select><br><br>
+<label>運動：</label>
 
-  <label>週期狀態：</label>
-  <select id="cycleStatus">
-    <option value="normal">平常</option>
-    <option value="before_period">生理期前</option>
-    <option value="during_period">生理期中</option>
-    <option value="after_period">生理期後</option>
-  </select><br><br>
+<select id="exercise">
+  <option value="">無</option>
+  <option value="walk">快走</option>
+  <option value="pilates">皮拉提斯</option>
+  <option value="bike">騎腳踏車</option>
+</select>
 
-  <button onclick="saveLog()">儲存</button>
+<div class="helper-text">
+運動會納入睡眠穩定度分析。
+</div>
+
+<br>
+
+<label>咖啡：</label>
+<select id="coffee">
+  <option value="">無</option>
+  <option value="早上">早上</option>
+  <option value="下午">下午</option>
+  <option value="晚上">晚上</option>
+</select><br><br>
+
+<label>週期狀態：</label>
+<select id="cycleStatus">
+  <option value="normal">平常</option>
+  <option value="before_period">生理期前</option>
+  <option value="during_period">生理期中</option>
+  <option value="after_period">生理期後</option>
+</select><br><br>
+
+<button onclick="saveLog()">儲存</button>
 
 </div>
 
 <div class="card">
-  <h3>🧭 決策建議</h3>
-  <div id="result" class="result"></div>
+<h3>🧭 決策建議</h3>
+<div id="result" class="result"></div>
 </div>
 
 <div class="card">
-  <h3>📈 睡眠品質趨勢</h3>
+<h3>📈 睡眠品質趨勢</h3>
 
-  <div class="chart-wrap">
-    <canvas id="qualityChart"></canvas>
-  </div>
+<div class="chart-wrap">
+  <canvas id="qualityChart"></canvas>
+</div>
 
-  <div id="qualityChartNote" class="chart-note"></div>
+<div id="qualityChartNote" class="chart-note"></div>
 </div>
 
 <div class="card">
-  <h3>📊 分析結果</h3>
-  <div id="analysis"></div>
+<h3>📊 分析結果</h3>
+<div id="analysis"></div>
 </div>
 
 <div class="card">
-  <h3>📋 歷史紀錄</h3>
+<h3>📋 歷史紀錄</h3>
 
-  <div class="history-table-wrap">
-    <table class="history-table">
+<div class="history-table-wrap">
 
-      <thead>
-        <tr>
-          <th>日期</th>
-          <th>劑量</th>
-          <th>入睡</th>
-          <th>夜醒</th>
-          <th>精神</th>
-          <th>備註</th>
-          <th></th>
-        </tr>
-      </thead>
+<table class="history-table">
 
-      <tbody id="history"></tbody>
+<thead>
+<tr>
+  <th>日期</th>
+  <th>劑量</th>
+  <th>入睡</th>
+  <th>夜醒</th>
+  <th>精神</th>
+  <th>備註</th>
+  <th></th>
+</tr>
+</thead>
 
-    </table>
-  </div>
+<tbody id="history"></tbody>
+
+</table>
+
+</div>
+
 </div>
 
 <script>
@@ -260,6 +388,7 @@ logs = logs.map(l => ({
   energy: Number(l.energy),
   supplement: Boolean(l.supplement),
   ivTherapy: Boolean(l.ivTherapy),
+  exercise: l.exercise || "",
   coffee: l.coffee || "",
   cycleStatus: l.cycleStatus || "normal"
 })).filter(l => l.date);
@@ -271,6 +400,7 @@ localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
 function setDefaultDate() {
 
   let d = new Date();
+
   d.setDate(d.getDate() - 1);
 
   document.getElementById("date").value =
@@ -405,6 +535,58 @@ function getSleepSupportBonus(records){
   return 0;
 }
 
+function getExerciseText(value){
+
+  const map = {
+    walk: "快走",
+    pilates: "皮拉提斯",
+    bike: "騎腳踏車"
+  };
+
+  return map[value] || "無";
+}
+
+function getExerciseImpact(l){
+
+  if(!l.exercise){
+    return {
+      type: "none",
+      score: 0,
+      text: "無"
+    };
+  }
+
+  if(l.exercise === "walk"){
+    return {
+      type: "positive",
+      score: 1,
+      text: "快走"
+    };
+  }
+
+  if(l.exercise === "bike"){
+    return {
+      type: "neutral",
+      score: 0.5,
+      text: "騎腳踏車"
+    };
+  }
+
+  if(l.exercise === "pilates"){
+    return {
+      type: "fatigue",
+      score: -0.5,
+      text: "皮拉提斯"
+    };
+  }
+
+  return {
+    type: "none",
+    score: 0,
+    text: "無"
+  };
+}
+
 function isValidTaperSample(l){
   return !getRecordInterference(l).isHigh;
 }
@@ -427,75 +609,6 @@ function formatNumber(n, digits=1){
   return Number(n).toFixed(digits);
 }
 
-function getGroupStats(records){
-
-  if(!records.length) return null;
-
-  let qualityScores = records.map(
-    l => getQualityScore100(l, records)
-  );
-
-  let validCount = records.filter(isValidTaperSample).length;
-
-  let highInterferenceCount = records.filter(
-    l => getRecordInterference(l).isHigh
-  ).length;
-
-  let supportCount = records.filter(
-    hasSleepSupport
-  ).length;
-
-  return {
-    count: records.length,
-    avgLatency: avg(records, "latency"),
-    avgWake: avg(records, "wake"),
-    avgEnergy: avg(records, "energy"),
-    avgQuality:
-      qualityScores.reduce((a,b) => a+b, 0) /
-      qualityScores.length,
-    stableCount: records.filter(isStable).length,
-    poorCount: records.filter(isPoorSleep).length,
-    validCount,
-    highInterferenceCount,
-    supportCount
-  };
-}
-
-function getInterferencePenalty(records){
-
-  let penalty = 0;
-
-  if (records.some(l => l.coffee === "下午")) penalty += 1;
-  if (records.some(l => l.coffee === "晚上")) penalty += 2;
-  if (records.some(l => l.cycleStatus === "before_period")) penalty += 1;
-  if (records.some(l => l.cycleStatus === "during_period")) penalty += 1;
-
-  return Math.min(penalty, 2);
-}
-
-function getInterferenceText(records){
-
-  let items = [];
-
-  if (records.some(l => l.coffee === "下午")){
-    items.push("下午咖啡");
-  }
-
-  if (records.some(l => l.coffee === "晚上")){
-    items.push("晚上咖啡");
-  }
-
-  if (records.some(l => l.cycleStatus === "before_period")){
-    items.push("生理期前");
-  }
-
-  if (records.some(l => l.cycleStatus === "during_period")){
-    items.push("生理期中");
-  }
-
-  return items;
-}
-
 function dayDiff(a,b){
   return (new Date(b) - new Date(a)) / (1000*60*60*24);
 }
@@ -513,6 +626,7 @@ function getContinuousSameDose(){
   for(let i=logs.length-2;i>=0;i--){
 
     let prev=logs[i];
+
     let curr=result[0];
 
     if(prev.dose!==last.dose) break;
@@ -577,9 +691,7 @@ function evaluate(){
     }
   });
 
-  let supportCount = recent.filter(
-    hasSleepSupport
-  ).length;
+  let supportCount = recent.filter(hasSleepSupport).length;
 
   let supportText = "";
 
@@ -619,6 +731,17 @@ function evaluate(){
 
   let supportBonus=getSleepSupportBonus(validSamples);
 
+  let exerciseBonus = 0;
+
+  validSamples.forEach(l=>{
+    exerciseBonus += getExerciseImpact(l).score;
+  });
+
+  exerciseBonus = Math.max(
+    -1,
+    Math.min(1, exerciseBonus / 5)
+  );
+
   let stabilityBonus=1;
 
   if(recent.length >= 7 &&
@@ -631,7 +754,8 @@ function evaluate(){
   let decisionScore =
     latestScore +
     stabilityBonus +
-    supportBonus -
+    supportBonus +
+    exerciseBonus -
     interferencePenalty;
 
   let nextMap={
@@ -665,6 +789,18 @@ function evaluate(){
   resultDiv.className="result warn";
 }
 
+function getInterferencePenalty(records){
+
+  let penalty = 0;
+
+  if (records.some(l => l.coffee === "下午")) penalty += 1;
+  if (records.some(l => l.coffee === "晚上")) penalty += 2;
+  if (records.some(l => l.cycleStatus === "before_period")) penalty += 1;
+  if (records.some(l => l.cycleStatus === "during_period")) penalty += 1;
+
+  return Math.min(penalty, 2);
+}
+
 function saveLog(){
 
   let date=document.getElementById("date").value;
@@ -692,6 +828,8 @@ function saveLog(){
 
     ivTherapy:ivTherapy.checked,
 
+    exercise:exercise.value,
+
     coffee:coffee.value,
 
     cycleStatus:cycleStatus.value
@@ -704,10 +842,6 @@ function saveLog(){
   renderHistory();
 
   evaluate();
-
-  renderQualityChart();
-
-  analyze();
 }
 
 function deleteLog(i){
@@ -721,10 +855,6 @@ function deleteLog(i){
   renderHistory();
 
   evaluate();
-
-  renderQualityChart();
-
-  analyze();
 }
 
 function getCycleText(value){
@@ -782,6 +912,15 @@ function renderHistory(){
       `;
     }
 
+    if(l.exercise){
+
+      notes += `
+        <span class="history-badge badge-exercise">
+          運動:${getExerciseText(l.exercise)}
+        </span>
+      `;
+    }
+
     if(l.coffee){
 
       notes += `
@@ -815,474 +954,6 @@ function renderHistory(){
   });
 }
 
-function getTrendTag(stats){
-
-  if(!stats){
-    return {text:"資料不足", cls:"tag-warn"};
-  }
-
-  if(stats.avgQuality >= 85 &&
-     stats.poorCount === 0 &&
-     stats.stableCount >= Math.ceil(stats.count * 0.8)){
-
-    return {text:"穩定", cls:"tag-good"};
-  }
-
-  if(stats.poorCount > 0 || stats.avgQuality < 70){
-
-    return {text:"需觀察", cls:"tag-bad"};
-  }
-
-  return {text:"普通", cls:"tag-warn"};
-}
-
-function getLatestJudgement(latest, recent7){
-
-  let interference=getRecordInterference(latest);
-
-  let quality=getQualityScore100(latest, recent7);
-
-  let support=[];
-
-  if(latest.supplement){
-    support.push("保肝＋濱松");
-  }
-
-  if(latest.ivTherapy){
-    support.push("營養針");
-  }
-
-  let supportText =
-    support.length
-      ? `｜恢復支持：${support.join("、")}`
-      : "";
-
-  if(interference.isHigh){
-
-    return {
-      title:"🟡 高干擾日",
-      cls:"warn",
-      quality,
-      sampleText:"不列入降藥支持樣本",
-      note:
-        (interference.items.length
-          ? interference.items.join("、")
-          : "高干擾因素")
-        + supportText
-    };
-  }
-
-  if(isPoorSleep(latest)){
-
-    return {
-      title:"🔴 睡眠不穩",
-      cls:"bad",
-      quality,
-      sampleText:"不建議調整",
-      note:"先觀察睡眠是否恢復穩定" + supportText
-    };
-  }
-
-  if(isStable(latest)){
-
-    return {
-      title:"🟢 睡眠穩定",
-      cls:"good",
-      quality,
-      sampleText:"有效穩定樣本",
-      note:"可納入劑量穩定度判斷" + supportText
-    };
-  }
-
-  return {
-    title:"🟡 尚可但未穩",
-    cls:"warn",
-    quality,
-    sampleText:"繼續觀察",
-    note:"不是高干擾日，但條件還不夠穩" + supportText
-  };
-}
-
-function renderQualityChart(){
-
-  const canvas=document.getElementById("qualityChart");
-
-  const note=document.getElementById("qualityChartNote");
-
-  if(!canvas || !note) return;
-
-  const ctx=canvas.getContext("2d");
-
-  const rect=canvas.getBoundingClientRect();
-
-  const dpr=window.devicePixelRatio || 1;
-
-  const width=Math.max(
-    300,
-    rect.width || canvas.parentElement.clientWidth || 300
-  );
-
-  const height=230;
-
-  canvas.width=width*dpr;
-
-  canvas.height=height*dpr;
-
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-
-  ctx.clearRect(0,0,width,height);
-
-  if(logs.length < 2){
-
-    ctx.font="14px Arial";
-
-    ctx.fillStyle="#777";
-
-    ctx.fillText("至少 2 筆資料後顯示趨勢圖",20,40);
-
-    note.innerHTML="資料不足，先繼續累積睡眠紀錄。";
-
-    return;
-  }
-
-  const records=logs.slice(-30);
-
-  const scores=records.map(
-    l=>getQualityScore100(l, records)
-  );
-
-  const padding={
-    left:34,
-    right:12,
-    top:18,
-    bottom:34
-  };
-
-  const chartW=width-padding.left-padding.right;
-
-  const chartH=height-padding.top-padding.bottom;
-
-  function x(i){
-
-    if(records.length===1){
-      return padding.left + chartW/2;
-    }
-
-    return padding.left +
-      (i/(records.length-1))*chartW;
-  }
-
-  function y(score){
-
-    return padding.top +
-      (100-score)/100*chartH;
-  }
-
-  ctx.fillStyle="#e8f5e9";
-
-  ctx.fillRect(
-    padding.left,
-    padding.top,
-    chartW,
-    y(80)-padding.top
-  );
-
-  ctx.fillStyle="#fff8e1";
-
-  ctx.fillRect(
-    padding.left,
-    y(80),
-    chartW,
-    y(70)-y(80)
-  );
-
-  ctx.fillStyle="#ffebee";
-
-  ctx.fillRect(
-    padding.left,
-    y(70),
-    chartW,
-    padding.top+chartH-y(70)
-  );
-
-  ctx.strokeStyle="#ddd";
-
-  ctx.lineWidth=1;
-
-  ctx.font="12px Arial";
-
-  ctx.fillStyle="#666";
-
-  [100,80,70,50,0].forEach(v=>{
-
-    const yy=y(v);
-
-    ctx.beginPath();
-
-    ctx.moveTo(padding.left,yy);
-
-    ctx.lineTo(padding.left+chartW,yy);
-
-    ctx.stroke();
-
-    ctx.fillText(String(v),4,yy+4);
-  });
-
-  ctx.strokeStyle="#4CAF50";
-
-  ctx.lineWidth=2;
-
-  ctx.beginPath();
-
-  scores.forEach((score,i)=>{
-
-    const xx=x(i);
-
-    const yy=y(score);
-
-    if(i===0) ctx.moveTo(xx,yy);
-
-    else ctx.lineTo(xx,yy);
-  });
-
-  ctx.stroke();
-
-  records.forEach((l,i)=>{
-
-    const xx=x(i);
-
-    const yy=y(scores[i]);
-
-    const interference=getRecordInterference(l);
-
-    ctx.beginPath();
-
-    ctx.arc(xx,yy,4,0,Math.PI*2);
-
-    let color="#2e7d32";
-
-    if(interference.isHigh){
-
-      color="#f57c00";
-
-    } else if(l.ivTherapy){
-
-      color="#2e7d32";
-
-    } else if(l.supplement){
-
-      color="#1565c0";
-    }
-
-    ctx.fillStyle=color;
-
-    ctx.fill();
-
-    ctx.strokeStyle="#fff";
-
-    ctx.lineWidth=1.5;
-
-    ctx.stroke();
-  });
-
-  const latestScore=scores[scores.length-1];
-
-  const avgScore=scores.reduce((a,b)=>a+b,0)/scores.length;
-
-  const highCount=records.filter(
-    l=>getRecordInterference(l).isHigh
-  ).length;
-
-  const supportCount=records.filter(
-    hasSleepSupport
-  ).length;
-
-  let status="需觀察";
-
-  if(avgScore>=85 && latestScore>=80){
-    status="穩定";
-  } else if(avgScore<70 || latestScore<70){
-    status="偏弱";
-  }
-
-  note.innerHTML=
-    `最近${records.length}筆品質平均 ${formatNumber(avgScore,0)}/100｜`+
-    `最新 ${latestScore}/100｜`+
-    `高干擾 ${highCount} 筆｜`+
-    `恢復支持 ${supportCount} 筆｜`+
-    `狀態：${status}`;
-}
-
-function analyze(){
-
-  let analysis=document.getElementById("analysis");
-
-  if(logs.length<3){
-
-    analysis.innerHTML=
-      "目前資料太少，至少 3 筆後才會開始分析。";
-
-    return;
-  }
-
-  const groups=[
-    {key:"normal", label:"平常"},
-    {key:"before_period", label:"生理期前"},
-    {key:"during_period", label:"生理期中"},
-    {key:"after_period", label:"生理期後"}
-  ];
-
-  let recent7=getRecentRecords(7);
-
-  let s7=getGroupStats(recent7);
-
-  let latest=logs[logs.length-1];
-
-  let latestInfo=getLatestJudgement(latest, recent7);
-
-  let trendTag=getTrendTag(s7);
-
-  let validTotal=logs.filter(
-    isValidTaperSample
-  ).length;
-
-  let highTotal=logs.filter(
-    l=>getRecordInterference(l).isHigh
-  ).length;
-
-  let supportTotal=logs.filter(
-    hasSleepSupport
-  ).length;
-
-  let html="";
-
-  html += `<div class="summary-grid">`;
-
-  html += `
-    <div class="summary-box">
-      <div class="summary-title">🧭 今日判定</div>
-
-      <div class="summary-main ${latestInfo.cls}">
-        ${latestInfo.title}
-      </div>
-
-      <div class="summary-sub">
-        品質 ${latestInfo.quality}/100｜
-        ${latestInfo.sampleText}
-      </div>
-
-      <div class="summary-sub">
-        ${latestInfo.note}
-      </div>
-    </div>`;
-
-  if(s7){
-
-    html += `
-      <div class="summary-box">
-
-        <div class="summary-title">
-          📊 最近7筆
-        </div>
-
-        <div class="compact-line">
-          品質 ${formatNumber(s7.avgQuality,0)}/100
-
-          <span class="tag ${trendTag.cls}">
-            ${trendTag.text}
-          </span>
-        </div>
-
-        <div class="summary-sub">
-          穩定 ${s7.stableCount}/${s7.count}｜
-          不穩 ${s7.poorCount}/${s7.count}｜
-          有效樣本 ${s7.validCount}/${s7.count}｜
-          恢復支持 ${s7.supportCount}/${s7.count}
-        </div>
-
-      </div>`;
-  }
-
-  html += `
-    <div class="summary-box">
-
-      <div class="summary-title">
-        🧪 分類品質
-      </div>
-
-      <div class="compact-line">
-        總紀錄 ${logs.length} 筆｜
-        有效 ${validTotal} 筆｜
-        高干擾 ${highTotal} 筆｜
-        恢復支持 ${supportTotal} 筆
-      </div>
-
-      <div class="summary-sub">
-        保肝／濱松／營養針視為恢復支持因子。
-      </div>
-
-    </div>`;
-
-  html += `</div>`;
-
-  html += `
-    <details>
-
-      <summary>
-        展開詳細分析
-      </summary>
-
-      <div class="detail-content">
-  `;
-
-  html += `<strong>週期比較</strong><br>`;
-
-  groups.forEach(g=>{
-
-    let records=logs.filter(
-      l=>l.cycleStatus===g.key
-    );
-
-    let s=getGroupStats(records);
-
-    if(!s){
-
-      html += `${g.label}：0 筆<br>`;
-
-      return;
-    }
-
-    html +=
-      `${g.label}：${s.count} 筆｜`+
-      `平均入睡 ${formatNumber(s.avgLatency)} 分｜`+
-      `平均夜醒 ${formatNumber(s.avgWake)} 次｜`+
-      `平均精神 ${formatNumber(s.avgEnergy)}｜`+
-      `品質 ${formatNumber(s.avgQuality,0)}/100｜`+
-      `有效 ${s.validCount} 筆｜`+
-      `高干擾 ${s.highInterferenceCount} 筆｜`+
-      `恢復支持 ${s.supportCount} 筆<br>`;
-  });
-
-  html += `
-    <br>
-
-    <strong>
-      判讀規則
-    </strong><br>
-
-    保肝＋濱松與營養針：
-    視為放鬆／恢復支持因子，
-    不會被當成高干擾。
-    但也不會讓不穩睡眠直接變成穩定，
-    只有在近期睡眠已經穩定時，
-    才會提供小幅正向加分。
-  `;
-
-  html += `</div></details>`;
-
-  analysis.innerHTML=html;
-}
-
 window.onload=function(){
 
   setDefaultDate();
@@ -1290,13 +961,7 @@ window.onload=function(){
   renderHistory();
 
   evaluate();
-
-  renderQualityChart();
-
-  analyze();
 };
-
-window.addEventListener("resize", renderQualityChart);
 
 </script>
 
